@@ -1,0 +1,13 @@
+node_modules/
+.env
+server/data/
+.expo/
+app/dist/
+app/web-build/
+app/ios/
+app/android/
+.DS_Store
+*.log
+coverage/
+test-results/
+playwright-report/
