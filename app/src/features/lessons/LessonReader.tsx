@@ -7,7 +7,7 @@ import { categoryById, type Lesson } from '@/lessons';
 import { spacing } from '@/theme';
 import { AskBrianPrompts } from './AskBrianPrompts';
 import { KeyTakeaways } from './KeyTakeaways';
-import { LESSON_DISCLAIMER, readTimeLabel, validQuizQuestions } from './helpers';
+import { LESSON_DISCLAIMER, readTimeLabel, reviewedLabel, validQuizQuestions } from './helpers';
 import { LessonCallout } from './LessonCallout';
 import { LessonIconTile } from './LessonCards';
 import { LessonCompletion } from './LessonCompletion';
@@ -73,6 +73,7 @@ export function LessonReader({ lesson }: LessonReaderProps) {
 
 function LessonHero({ lesson, completed }: { lesson: Lesson; completed: boolean }) {
   const category = categoryById[lesson.categoryId];
+  const reviewed = reviewedLabel(lesson.lastReviewed);
   return (
     <View style={styles.hero}>
       <LessonIconTile icon={lesson.icon} size={56} variant="solid" completed={completed} />
@@ -90,6 +91,11 @@ function LessonHero({ lesson, completed }: { lesson: Lesson; completed: boolean 
         <Badge label={lesson.level} tone="outline" icon="bar-chart-outline" size="md" accessibilityLabel={`Level: ${lesson.level}`} />
         {completed ? <Badge label="Completed" tone="success" icon="checkmark-circle" size="md" /> : null}
       </View>
+      {reviewed ? (
+        <AppText variant="caption" tone="muted">
+          Figures checked {reviewed}. Costs and limits change every year, so confirm current amounts with the sources below.
+        </AppText>
+      ) : null}
     </View>
   );
 }

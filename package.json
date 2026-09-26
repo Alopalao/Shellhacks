@@ -3,15 +3,23 @@
   "version": "1.0.0",
   "private": true,
   "description": "BRIAN — Built for patients, Reliable prescription management, Integrated AI doctor, Always connected to your physician, Next-generation healthcare.",
+  "engines": {
+    "node": "^22.13.0 || ^24.3.0 || >=26.0.0"
+  },
   "scripts": {
-    "setup": "npm install && npm --prefix server install && npm --prefix app install",
+    "setup": "node scripts/setup.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "lan": "node scripts/lan.mjs",
     "dev": "node scripts/dev.mjs",
     "dev:web": "node scripts/dev.mjs --web",
     "server": "npm --prefix server run dev",
     "app": "npm --prefix app run start",
     "web": "npm --prefix app run web",
+    "export:web": "npm --prefix app run export:web",
     "typecheck": "npm --prefix server run typecheck && npm --prefix app run typecheck",
     "test": "npm --prefix server test",
+    "setup:e2e": "npm --prefix e2e install && npm --prefix e2e run install-browser",
+    "test:e2e": "npm --prefix e2e test",
     "reset-data": "npm --prefix server run reset-data"
   }
 }

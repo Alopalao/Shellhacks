@@ -59,7 +59,7 @@ export const lessons: Lesson[] = [
         heading: 'Specialists and referrals',
         body: md(
           'Specialists focus on one area — for example, cardiologists (heart), endocrinologists (hormones and diabetes), or dermatologists (skin).',
-          'A **referral** is a written order from your PCP saying you need to see a specialist or get a certain service. Many HMO and POS plans require one. If you skip it, the plan may refuse to pay.',
+          'A **referral** is a written order from your PCP saying you need to see a specialist or get a certain service. Many HMO (health maintenance organization) and POS (point of service) plans require one. If you skip it, the plan may refuse to pay.',
           'Before a specialist visit:',
           steps(
             'Check whether your plan requires a referral.',
@@ -79,7 +79,7 @@ export const lessons: Lesson[] = [
           bullets(
             "Check the plan's online provider directory, then call the office to confirm they take your specific plan.",
             'Check the facility (hospital, lab, imaging center), not just the doctor.',
-            'In an emergency, go to the nearest ER. Federal law limits surprise out-of-network bills for most emergency care.',
+            "In an emergency, call 911 or go to the nearest ER. Don't drive yourself if you might be having a heart attack or stroke. Federal law limits surprise out-of-network bills for most emergency care.",
           ),
         ),
       },
@@ -213,7 +213,7 @@ export const lessons: Lesson[] = [
     icon: 'navigate-outline',
     callout: {
       kind: 'emergency',
-      text: "If someone may be having a life-threatening emergency — chest pain or pressure, trouble breathing, stroke signs (face drooping, arm weakness, speech trouble), severe bleeding, a seizure, or passing out — call 911 now. Don't drive yourself. For a mental-health crisis, call or text 988. For a possible poisoning, call Poison Help at 1-800-222-1222.",
+      text: "If someone may be having a life-threatening emergency — chest pain or pressure, trouble breathing, stroke signs (face drooping, arm weakness, speech trouble), severe bleeding, a seizure, or passing out — call 911 now. Don't drive yourself. For a mental-health crisis, call or text 988. For a possible poisoning in someone who is awake and breathing normally, call Poison Help at 1-800-222-1222.",
     },
     sections: [
       {
@@ -222,13 +222,14 @@ export const lessons: Lesson[] = [
           'If a person could die or be permanently harmed, treat it as an emergency. **Call 911** instead of driving — paramedics can start treatment on the way and alert the hospital.',
           'Call 911 right away for:',
           bullets(
-            'Chest pain or pressure',
+            'Chest pain, pressure, or discomfort, or pain spreading to the arm, jaw, neck, or back, especially with shortness of breath, a cold sweat, or nausea',
             'Severe trouble breathing',
             'Sudden weakness or drooping on one side, trouble speaking, or sudden trouble seeing or walking',
             "A seizure that lasts more than a minute, or someone who passes out and doesn't wake up quickly",
             "Heavy bleeding that won't stop",
             'A head, neck, or spine injury with confusion, numbness, or trouble moving',
             'A severe allergic reaction with trouble breathing or swelling',
+            "A possible overdose or poisoning where the person collapses, has a seizure, has trouble breathing, or can't be woken up. If opioids may be involved, give naloxone if you have it.",
           ),
           "When in doubt, call. It's always OK to let 911 decide.",
         ),
@@ -247,6 +248,7 @@ export const lessons: Lesson[] = [
             "Vomiting or diarrhea that won't stop",
             'Breathing in smoke or toxic fumes',
           ),
+          "For a possible poisoning or overdose in someone who is awake and breathing normally, call Poison Help at **1-800-222-1222** right away. They'll tell you whether to go to the ER.",
           "If you are thinking about hurting yourself, call or text **988** any time, or go to the nearest ER. Don't wait.",
         ),
       },
@@ -812,7 +814,7 @@ export const lessons: Lesson[] = [
             'Choose an in-network doctor to keep costs down.',
             'Ask whether any new tests would be covered.',
           ),
-          'In some cases, **Medicare Part B** covers a second opinion for medically necessary surgery that is not an emergency, and a third opinion if the first two disagree. You usually pay 20% of the Medicare-approved amount after the Part B deductible.',
+          'In some cases, **Medicare Part B** covers a second opinion for medically necessary surgery that is not an emergency, and a third opinion if the first two disagree. You usually pay 20% of the Medicare-approved amount (the price Medicare sets for a covered service) after the Part B deductible.',
         ),
       },
       {

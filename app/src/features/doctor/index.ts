@@ -29,6 +29,7 @@ export { ChipGroup, type ChipGroupProps, type ChipOption } from './components/Ch
 export { DrugLookupPanel, type DrugLookupPanelProps, type DrugLookupState } from './components/DrugLookupPanel';
 export { topWarnings } from './drug-info';
 export { LOW_ADHERENCE, PatientCard, type PatientCardProps } from './components/PatientCard';
+export { isPatientUnavailable, PatientUnavailable } from './components/PatientUnavailable';
 export { PrescriptionCard, type PrescriptionCardProps } from './components/PrescriptionCard';
 export {
   RefillRequestCard,

@@ -3,12 +3,15 @@ import type { Prescription, PrescriptionStatus, User } from '@/lib/contracts';
 import { ageFromDob, displayName, formatRelative, formatTime, sortTimes, type DateInput } from '@/lib/format';
 import type { BadgeTone } from '@/components/ui';
 
-/** `Dr. Reyes` — title + last name, for greetings. Falls back to the full display name. */
+/**
+ * `Dr. Reyes` — title + last name, for greetings. Joined by a no-break space so a wrapping title
+ * never strands "Dr." at the end of a line. Falls back to the full display name.
+ */
 export function doctorShortName(user: Pick<User, 'name' | 'role'> | null | undefined): string {
   const full = displayName(user ? { ...user, role: 'doctor' } : null);
   const bare = full.replace(/^dr\.?\s+/i, '').trim();
   const last = bare.split(/\s+/).filter(Boolean).at(-1);
-  return last ? `Dr. ${last}` : full;
+  return last ? `Dr.\u00A0${last}` : full;
 }
 
 /** `Lisinopril 10 mg`. */

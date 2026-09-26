@@ -60,6 +60,8 @@ export interface InteractionFinding {
   /** Label wording (cleaned). */
   text: string;
   sourceId: string;
+  /** `otherDrug` is a food, drink or substance from the question (grapefruit juice, alcohol…). */
+  substance?: boolean;
 }
 
 export interface ConditionFinding {
@@ -68,6 +70,8 @@ export interface ConditionFinding {
   plainCondition: string;
   text: string;
   sourceId: string;
+  /** From "Ask a doctor before use" / "Do not use" / contraindications (vs. a general warning). */
+  askFirst?: boolean;
 }
 
 export interface AllergyFinding {

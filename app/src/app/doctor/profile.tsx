@@ -13,6 +13,7 @@ import {
   TextArea,
   useToast,
 } from '@/components/ui';
+import { useDraft } from '@/hooks/useDraft';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import type { User } from '@/lib/contracts';
@@ -33,26 +34,43 @@ export default function DoctorProfileScreen() {
   );
 }
 
+interface DoctorDraft {
+  name: string;
+  specialty: string;
+  credentials: string;
+  clinic: string;
+  bio: string;
+}
+
+function doctorDraft(user: User): DoctorDraft {
+  const d = user.doctor;
+  return {
+    name: user.name,
+    specialty: d?.specialty ?? '',
+    credentials: d?.credentials ?? '',
+    clinic: d?.clinic ?? '',
+    bio: d?.bio ?? '',
+  };
+}
+
+/** Equal as far as saving goes (every field is trimmed on save). */
+function sameDoctorDraft(a: DoctorDraft, b: DoctorDraft) {
+  return (Object.keys(a) as (keyof DoctorDraft)[]).every((k) => a[k].trim() === b[k].trim());
+}
+
 function DoctorDetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) => void }) {
   const toast = useToast();
-  const d = user.doctor;
-  const [name, setName] = useState(user.name);
-  const [specialty, setSpecialty] = useState(d?.specialty ?? '');
-  const [credentials, setCredentials] = useState(d?.credentials ?? '');
-  const [clinic, setClinic] = useState(d?.clinic ?? '');
-  const [bio, setBio] = useState(d?.bio ?? '');
+  // Follows the saved profile (e.g. after "Reset demo data") unless there are unsaved edits.
+  const [draft, setDraft] = useDraft(doctorDraft(user), sameDoctorDraft);
+  const { name, specialty, credentials, clinic, bio } = draft;
+  const edit = (key: keyof DoctorDraft) => (value: string) => setDraft((d) => ({ ...d, [key]: value }));
   const [saving, setSaving] = useState(false);
 
   const nameError = name.trim() ? null : 'Your name can’t be empty.';
   const specialtyError = specialty.trim() ? null : 'Add a specialty (e.g. Internal Medicine).';
   const credentialsError = credentials.trim() ? null : 'Add your credentials (e.g. MD).';
   const invalid = !!(nameError || specialtyError || credentialsError);
-  const dirty =
-    name.trim() !== user.name ||
-    specialty.trim() !== (d?.specialty ?? '') ||
-    credentials.trim() !== (d?.credentials ?? '') ||
-    clinic.trim() !== (d?.clinic ?? '') ||
-    bio.trim() !== (d?.bio ?? '');
+  const dirty = !sameDoctorDraft(draft, doctorDraft(user));
 
   const save = async () => {
     if (invalid) return;
@@ -69,6 +87,8 @@ function DoctorDetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) =
         },
       });
       onSaved(updated);
+      // Show exactly what the server stored (unless the user kept typing while it saved).
+      setDraft((d) => (sameDoctorDraft(d, draft) ? doctorDraft(updated) : d));
       toast.success('Profile saved', 'Your patients will see the update.');
     } catch (e) {
       toast.error('Couldn’t save your profile', errorMessage(e));
@@ -80,18 +100,18 @@ function DoctorDetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) =
   return (
     <Card style={styles.card}>
       <SectionHeader title="Practice details" icon="briefcase-outline" subtitle="Shown to your patients in BRIAN." />
-      <Input label="Full name" value={name} onChangeText={setName} autoComplete="name" error={nameError} />
+      <Input label="Full name" value={name} onChangeText={edit('name')} autoComplete="name" error={nameError} />
       <Input
         label="Specialty"
         value={specialty}
-        onChangeText={setSpecialty}
+        onChangeText={edit('specialty')}
         placeholder="Internal Medicine"
         error={specialtyError}
       />
       <Input
         label="Credentials"
         value={credentials}
-        onChangeText={setCredentials}
+        onChangeText={edit('credentials')}
         placeholder="MD"
         autoCapitalize="characters"
         error={credentialsError}
@@ -100,7 +120,7 @@ function DoctorDetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) =
         label="Clinic"
         optional
         value={clinic}
-        onChangeText={setClinic}
+        onChangeText={edit('clinic')}
         placeholder="BRIAN Health Clinic"
         leftIcon="business-outline"
       />
@@ -108,7 +128,7 @@ function DoctorDetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) =
         label="Bio"
         optional
         value={bio}
-        onChangeText={setBio}
+        onChangeText={edit('bio')}
         placeholder="A short introduction for your patients."
         maxLength={600}
         minHeight={110}

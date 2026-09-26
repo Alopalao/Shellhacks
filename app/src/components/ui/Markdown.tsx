@@ -175,6 +175,9 @@ const NNBSP = '\u202F';
 
 // ───────────────────────── Rendering ─────────────────────────
 
+/** Diameter of the yellow step number in numbered lists. */
+const NUMBER_BADGE_SIZE = 22;
+
 export interface MarkdownProps {
   /** Markdown-lite source. */
   text: string;
@@ -304,7 +307,8 @@ export function Markdown({
               <View key={key} style={styles.list} accessibilityRole="list">
                 {block.items.map((item, ii) => (
                   <View key={`${key}-${ii}`} style={styles.listItem}>
-                    <View style={[styles.numberWrap, { minHeight: lineHeight }]}>
+                    {/* Fixed first-line height (like bullets) so the badge sits on line 1 of long steps. */}
+                    <View style={[styles.numberWrap, { height: Math.max(lineHeight, NUMBER_BADGE_SIZE) }]}>
                       <View style={styles.numberBadge}>
                         <Text style={styles.numberText}>{item.n}</Text>
                       </View>
@@ -350,10 +354,10 @@ const styles = StyleSheet.create({
   },
   numberWrap: { justifyContent: 'center' },
   numberBadge: {
-    minWidth: 22,
-    height: 22,
+    minWidth: NUMBER_BADGE_SIZE,
+    height: NUMBER_BADGE_SIZE,
     paddingHorizontal: 4,
-    borderRadius: 11,
+    borderRadius: NUMBER_BADGE_SIZE / 2,
     backgroundColor: colors.yellow,
     alignItems: 'center',
     justifyContent: 'center',

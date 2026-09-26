@@ -18,6 +18,7 @@ import {
   type TextInput,
 } from 'react-native';
 import { AppText, Button, EmergencyStrip, ErrorState, LoadingState, Screen } from '@/components/ui';
+import { relatedLesson } from '@/features/lessons';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -25,7 +26,7 @@ import type { AiChatContext, AiConversation, AiMessage, AiMode, Role, VisitNote 
 import { firstName, truncate } from '@/lib/format';
 import { useSocketEvent } from '@/lib/socket';
 import { setTabBadge } from '@/lib/tab-badges';
-import { getLesson } from '@/lessons';
+import { getLesson, type Lesson } from '@/lessons';
 import { colors, maxContentWidth, spacing } from '@/theme';
 import { AiHeader } from './components/AiHeader';
 import { AssistantMessage } from './components/AssistantMessage';
@@ -34,6 +35,7 @@ import { ContextChips, type ContextChipItem, type ContextKind } from './componen
 import { FailedTurnCard } from './components/FailedTurnCard';
 import { ModeChips } from './components/ModeChips';
 import { NotePicker } from './components/NotePicker';
+import { RelatedLessonCard } from './components/RelatedLessonCard';
 import { SuggestedPrompts } from './components/SuggestedPrompts';
 import { ThinkingBubble } from './components/ThinkingBubble';
 import { TrustPanel } from './components/TrustPanel';
@@ -317,6 +319,22 @@ export function AiChatScreen({ role }: AiChatScreenProps) {
     persona.canPickNotes && mode === 'explain-note' && !context.noteId && !context.noteText && !busy && !chat.loading;
   const composerDisabled = !chat.ready || chat.loading || !userId;
 
+  // Patients get a "Related BRIAN lesson" under answers whose question matches a lesson's topic
+  // (not for lesson follow-ups, which came from that lesson, nor under emergency guidance).
+  const relatedByAnswer = new Map<string, Lesson>();
+  if (role === 'patient') {
+    let question: AiMessage | null = null;
+    for (const m of chat.messages) {
+      if (m.role === 'user') {
+        question = m;
+        continue;
+      }
+      if (!question || question.mode === 'lesson' || m.triage?.level === 'emergency') continue;
+      const lesson = relatedLesson(question.content);
+      if (lesson) relatedByAnswer.set(m.id, lesson);
+    }
+  }
+
   const renderMessage = (message: AiMessage) => (
     <View key={message.id} onLayout={(e) => handleMessageLayout(message.id, e)}>
       {message.role === 'user' ? (
@@ -335,6 +353,7 @@ export function AiChatScreen({ role }: AiChatScreenProps) {
           }}
         />
       )}
+      {message.role === 'assistant' ? <RelatedLesson lesson={relatedByAnswer.get(message.id)} /> : null}
     </View>
   );
 
@@ -482,6 +501,10 @@ export function AiChatScreen({ role }: AiChatScreenProps) {
       {body}
     </Screen>
   );
+}
+
+function RelatedLesson({ lesson }: { lesson: Lesson | undefined }) {
+  return lesson ? <RelatedLessonCard lesson={lesson} /> : null;
 }
 
 const styles = StyleSheet.create({

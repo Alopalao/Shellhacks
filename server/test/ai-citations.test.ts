@@ -38,11 +38,11 @@ describe('finalizeCitations', () => {
     expect(finalizeCitations('Fact [2][2].', sources(2).all()).content).toBe('Fact [1].');
   });
 
-  it('returns the top 3 retrieved sources when nothing is cited', () => {
+  it('returns no sources when nothing (valid) is cited', () => {
     const { content, citations } = finalizeCitations('No citations here [9].', sources(5).all());
     expect(content).toBe('No citations here.');
-    expect(citations.map((c) => c.id)).toEqual(['1', '2', '3']);
-    expect(citations.map((c) => c.title)).toEqual(['Source 1', 'Source 2', 'Source 3']);
+    // Unused sources under an answer would look like evidence for it.
+    expect(citations).toEqual([]);
   });
 
   it('keeps ids consistent between text and citations', () => {

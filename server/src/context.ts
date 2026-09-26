@@ -15,6 +15,8 @@ export interface Session {
   token: string;
   userId: string;
   createdAt: string;
+  /** Last authenticated request / socket (refreshed at most once a minute; absent in older files). */
+  lastUsedAt?: string;
 }
 
 /** Everything persisted to the JSON store. Mutate arrays in place, then call db.save(). */

@@ -184,6 +184,7 @@ export default function MedsScreen() {
               onPress={() => router.push(`/patient/meds/${rx.id}`)}
               onRequestRenewal={() => void requestRenewal(rx)}
               requesting={requestingId === rx.id}
+              now={now}
             />
           ))}
         </View>

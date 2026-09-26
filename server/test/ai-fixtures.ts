@@ -144,6 +144,18 @@ export const ARTICLE: PubMedArticle = {
   url: 'https://pubmed.ncbi.nlm.nih.gov/31937550/',
 };
 
+export const STROKE_ARTICLE: PubMedArticle = {
+  pmid: '30000001',
+  title: 'Recognition of stroke symptoms by the public: a systematic review.',
+  journal: 'Stroke',
+  year: '2022',
+  authors: ['Doe A', 'Roe B'],
+  publicationTypes: ['Journal Article', 'Systematic Review'],
+  abstract: 'Public recognition of stroke warning signs is limited. Education campaigns improve recognition and prompt calls to emergency services.',
+  conclusion: null,
+  url: 'https://pubmed.ncbi.nlm.nih.gov/30000001/',
+};
+
 const label = (generic: string, productType: string, sections: DrugLabel['sections'], setId: string): DrugLabel => ({
   setId,
   brandNames: [],
@@ -183,7 +195,16 @@ export const LABELS: Record<string, DrugLabel> = {
     'ibu-set',
   ),
   metformin: label('metformin', 'HUMAN PRESCRIPTION DRUG', { indications: 'Metformin is indicated to improve glycemic control in adults with type 2 diabetes mellitus.' }, 'met-set'),
-  atorvastatin: label('atorvastatin', 'HUMAN PRESCRIPTION DRUG', { indications: 'Atorvastatin is indicated to reduce the risk of MI and stroke.' }, 'ator-set'),
+  atorvastatin: label(
+    'atorvastatin',
+    'HUMAN PRESCRIPTION DRUG',
+    {
+      indications: 'Atorvastatin is indicated to reduce the risk of MI and stroke.',
+      interactions:
+        'Grapefruit Juice Clinical Impact: Grapefruit juice consumption, especially excessive consumption, more than 1.2 liters/daily, can raise the plasma levels of atorvastatin and may increase the risk of myopathy and rhabdomyolysis. Intervention: Avoid intake of large quantities of grapefruit juice.',
+    },
+    'ator-set',
+  ),
   amoxicillin: label('amoxicillin', 'HUMAN PRESCRIPTION DRUG', { indications: 'Amoxicillin is indicated for infections caused by susceptible bacteria.' }, 'amox-set'),
 };
 
@@ -220,7 +241,8 @@ export function stubEvidence(options: { offline?: boolean; failAll?: boolean } =
     async searchPubMed(query) {
       calls.pubmed.push(query);
       if (options.failAll) return fail();
-      return offline ? [] : [ARTICLE];
+      if (offline) return [];
+      return /stroke/i.test(query) ? [STROKE_ARTICLE] : [ARTICLE];
     },
     async searchMedlinePlus(term) {
       calls.medlineplus.push(term);

@@ -1,8 +1,22 @@
+# Normalize text files to LF in the repo and in every checkout (macOS, Linux and Windows alike),
+# regardless of each teammate's core.autocrlf setting.
 * text=auto eol=lf
+
+# Binary assets: never touch line endings or try to diff/merge them as text.
 *.png binary
 *.jpg binary
 *.jpeg binary
+*.gif binary
+*.webp binary
 *.ico binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.mp4 binary
+*.pdf binary
+
+# Windows-only scripts need CRLF.
 *.bat text eol=crlf
 *.cmd text eol=crlf
 *.ps1 text eol=crlf

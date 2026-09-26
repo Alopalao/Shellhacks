@@ -19,10 +19,12 @@ export interface AdherenceResult {
 }
 
 /**
- * Counts, for every non-discontinued prescription with reminder times, each slot from
+ * Counts, for every active prescription with reminder times, each slot from
  * max(window start, startDate) to min(today, endDate). On `today` a slot counts only when
  * it's due (slot ≤ nowTime) or already logged, so a morning check doesn't read as missed
- * evening doses. As-needed meds (no times) are never "scheduled".
+ * evening doses. As-needed meds (no times) are never "scheduled", and neither are paused or
+ * discontinued ones: the patient is told not to take those, so skipped doses aren't misses
+ * (matching the patient's checklist and the doctor's 14-day grid, which show active meds only).
  */
 export function computeAdherence(
   prescriptions: readonly Prescription[],
@@ -36,7 +38,7 @@ export function computeAdherence(
   let scheduled = 0;
   let taken = 0;
   for (const rx of prescriptions) {
-    if (rx.status === 'discontinued' || rx.times.length === 0) continue;
+    if (rx.status !== 'active' || rx.times.length === 0) continue;
     const from = maxKey(windowStart, rx.startDate);
     const to = rx.endDate ? minKey(today, rx.endDate) : today;
     for (const date of dateRange(from, to)) {

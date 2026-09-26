@@ -110,6 +110,75 @@ export function rankLessonSearch(query: string): Lesson[] {
   );
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+
+/** `'2026-09'` → `'Sept 2026'`; null for a missing or malformed value. */
+export function reviewedLabel(lastReviewed: string | undefined): string | null {
+  const match = /^(\d{4})-(\d{2})$/.exec(lastReviewed?.trim() ?? '');
+  const month = match ? MONTHS[Number(match[2]) - 1] : undefined;
+  return match && month ? `${month} ${match[1]}` : null;
+}
+
+// ───────────────────────── Related lesson (for AI answers) ─────────────────────────
+
+/** Tags too generic to say what a question is about. */
+const GENERIC_TAGS = new Set(['911', '988', 'emergency', 'women', 'brain', 'insurance', 'health', 'doctor']);
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+let tagIndex: { lesson: Lesson; tags: { re: RegExp; weight: number }[] }[] | null = null;
+
+/**
+ * Lesson tags as whole-word patterns, weighted by how specific they are: rarer and multi-word tags
+ * weigh more, and so do tags listed first (a lesson lists its main topic first).
+ */
+function relatedIndex() {
+  if (tagIndex) return tagIndex;
+  const tagsOf = (lesson: Lesson) => [...new Set(lesson.tags.map((t) => t.trim().toLowerCase()))];
+  const freq = new Map<string, number>();
+  for (const lesson of allLessons) for (const tag of tagsOf(lesson)) freq.set(tag, (freq.get(tag) ?? 0) + 1);
+  tagIndex = allLessons.map((lesson) => ({
+    lesson,
+    tags: tagsOf(lesson)
+      .map((tag, position) => ({ tag, position }))
+      .filter(({ tag }) => tag.length >= 3 && !GENERIC_TAGS.has(tag))
+      .map(({ tag, position }) => ({
+        re: new RegExp(`(^|[^a-z0-9])${escapeRegExp(tag)}(s|es)?([^a-z0-9]|$)`),
+        weight:
+          (1 / (freq.get(tag) ?? 1)) * (1 + 0.5 * (tag.split(/\s+/).length - 1)) * Math.max(0.5, 1 - 0.03 * position),
+      })),
+  }));
+  return tagIndex;
+}
+
+/**
+ * The lesson that best matches a free-text question (by its search tags), or null when nothing
+ * specific matches or two lessons match equally well. Used to suggest a "Related BRIAN lesson"
+ * under AI answers.
+ */
+export function relatedLesson(text: string, minScore = 0.35): Lesson | null {
+  const q = text.toLowerCase();
+  if (!q.trim()) return null;
+  let best: Lesson | null = null;
+  let bestScore = 0;
+  let runnerUp = 0;
+  for (const { lesson, tags } of relatedIndex()) {
+    let score = 0;
+    for (const tag of tags) if (tag.re.test(q)) score += tag.weight;
+    if (score > bestScore) {
+      runnerUp = bestScore;
+      best = lesson;
+      bestScore = score;
+    } else if (score > runnerUp) {
+      runnerUp = score;
+    }
+  }
+  // A tie means the question isn't specific enough to pick one lesson.
+  return bestScore >= minScore && bestScore - runnerUp > 1e-9 ? best : null;
+}
+
 export interface CategoryStats {
   category: LessonCategory;
   lessons: Lesson[];

@@ -2,11 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { profileHrefForRole, useAuth } from '@/lib/auth';
 import { useServerUrl } from '@/lib/server-url';
 import { useSocket, type SocketStatus } from '@/lib/socket';
-import { colors, radius, spacing } from '@/theme';
+import { colors, spacing } from '@/theme';
 import { AppText } from './AppText';
 
 /** Human label for a socket status. */
@@ -32,13 +31,13 @@ export interface ConnectionBannerProps {
 }
 
 /**
- * Slim floating pill at the top of the screen while the realtime connection is down.
- * Rendered once by the patient/doctor tab layouts; tap → profile (server settings).
+ * Slim black bar shown while the realtime connection is down; tap → profile (server settings).
+ * The tab layouts render it in the layout flow right above the tab bar (see `renderAppTabBar`), so
+ * it never covers screen headers, content or toasts.
  */
 export function ConnectionBanner({ delayMs = 2_500, style }: ConnectionBannerProps) {
   const { status: authStatus, user } = useAuth();
   const { status } = useSocket();
-  const insets = useSafeAreaInsets();
   const problem = authStatus === 'signed-in' && status !== 'connected' && status !== 'idle';
   const [visible, setVisible] = useState(false);
 
@@ -52,25 +51,25 @@ export function ConnectionBanner({ delayMs = 2_500, style }: ConnectionBannerPro
   }, [problem, delayMs]);
 
   if (!visible || !problem || !user) return null;
+  const expired = status === 'unauthorized';
   return (
-    <View pointerEvents="box-none" style={[styles.floating, { top: insets.top + spacing.xs }, style]}>
-      <Pressable
-        onPress={() => router.push(profileHrefForRole(user.role))}
-        accessibilityRole="button"
-        accessibilityLabel={`${status === 'unauthorized' ? 'Session expired' : 'Reconnecting to the BRIAN server'}. Open server settings.`}
-        accessibilityLiveRegion="polite"
-        style={({ pressed }) => [styles.pill, pressed && styles.pressed]}
-      >
-        {status === 'unauthorized' ? (
-          <Ionicons name="lock-closed" size={14} color={colors.yellow} />
-        ) : (
-          <ActivityIndicator size="small" color={colors.yellow} />
-        )}
-        <AppText variant="caption" tone="inverse" weight="semibold">
-          {status === 'unauthorized' ? 'Session expired — sign in again' : 'Reconnecting to BRIAN…'}
-        </AppText>
-      </Pressable>
-    </View>
+    <Pressable
+      onPress={() => router.push(profileHrefForRole(user.role))}
+      accessibilityRole="button"
+      accessibilityLabel={`${expired ? 'Session expired' : 'Reconnecting to the BRIAN server'}. Open server settings.`}
+      accessibilityLiveRegion="polite"
+      style={({ pressed }) => [styles.bar, pressed && styles.pressed, style]}
+    >
+      {expired ? (
+        <Ionicons name="lock-closed" size={14} color={colors.yellow} />
+      ) : (
+        <ActivityIndicator size="small" color={colors.yellow} />
+      )}
+      <AppText variant="caption" tone="inverse" weight="semibold" numberOfLines={1} style={styles.barText}>
+        {expired ? 'Session expired — sign in again' : 'Reconnecting to BRIAN…'}
+      </AppText>
+      <Ionicons name="chevron-forward" size={14} color={colors.textOnBlack} />
+    </Pressable>
   );
 }
 
@@ -112,16 +111,16 @@ export function ConnectionStatus({ showUrl = true, style }: ConnectionStatusProp
 }
 
 const styles = StyleSheet.create({
-  floating: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 900, elevation: 900 },
-  pill: {
+  bar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
     minHeight: 36,
     paddingHorizontal: spacing.lg,
-    borderRadius: radius.pill,
     backgroundColor: colors.black,
   },
+  barText: { flexShrink: 1 },
   pressed: { opacity: 0.85 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   statusDot: { width: 12, height: 12, borderRadius: 6 },

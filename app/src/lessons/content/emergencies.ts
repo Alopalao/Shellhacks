@@ -105,20 +105,20 @@ const strokeBeFast: Lesson = {
       options: [
         'Wait and see if it happens again',
         'Give him an aspirin and let him rest',
-        'Call 911 now, because signs that go away still need emergency care',
-        'Drive him to his regular doctor tomorrow',
+        'Call 911 and note when it started',
+        'Drive him to his doctor tomorrow',
       ],
       answerIndex: 2,
       explanation:
-        "Signs that go away may be a TIA (mini-stroke), which is a warning that a stroke may follow. It needs emergency care right away. Don't give aspirin, since some strokes are caused by bleeding.",
+        "Signs that go away still need emergency care. They may be a TIA (mini-stroke), which is a warning that a stroke may follow. Call 911 and note when the signs started. Don't give aspirin, since some strokes are caused by bleeding.",
     },
     {
       question: 'Why is it important to note the time stroke symptoms started?',
       options: [
-        'Some treatments only work if they are started within a few hours of the first symptom',
+        'Some treatments only work within a few hours',
         'So you know when it is safe to give aspirin',
         'Insurance companies require it before paying',
-        "It isn't important once 911 has been called",
+        "It doesn't matter once 911 has been called",
       ],
       answerIndex: 0,
       explanation:
@@ -272,10 +272,10 @@ const heartAttackWarningSigns: Lesson = {
     {
       question: 'How is a heart attack different from cardiac arrest?',
       options: [
-        'They are the same thing',
-        'A heart attack only happens to men',
-        'Cardiac arrest is always less serious',
-        'In cardiac arrest the heart stops pumping and the person collapses; in a heart attack, blood flow to the heart is blocked',
+        'They are two names for the same problem',
+        'A heart attack only happens to older men',
+        'Cardiac arrest is always the milder one',
+        'In cardiac arrest, the heart stops pumping',
       ],
       answerIndex: 3,
       explanation:
@@ -428,8 +428,8 @@ const carAccidentWhatToDo: Lesson = {
       options: [
         'Skip the doctor, since nothing hurts',
         'Wait a month and see how you feel',
-        'Get checked by a clinician, because some injuries like concussion show up later',
-        "Only see a doctor if the other driver's insurer agrees to pay",
+        'Get checked by a clinician soon',
+        'See a doctor only if the other insurer pays',
       ],
       answerIndex: 2,
       explanation:
@@ -511,7 +511,7 @@ const firstAidBasics: Lesson = {
   title: 'First Aid Basics: Bleeding, Burns, Choking, and CPR',
   summary:
     'Simple, current steps that can save a life before help arrives: stopping heavy bleeding, cooling burns, helping someone who is choking, and Hands-Only CPR with an AED.',
-  readMinutes: 5,
+  readMinutes: 6,
   level: 'Basics',
   icon: 'bandage-outline',
   callout: {
@@ -555,7 +555,24 @@ const firstAidBasics: Lesson = {
           '**Skip home remedies.** Butter, oil, and other greasy products can trap heat and make the burn worse.',
           '**Leave blisters alone,** and cover the burn loosely with a clean, non-stick dressing.',
         ),
-        "**Get medical care** if the burn is larger than the person's palm; is on the face, hands, feet, genitals, or a joint; blisters; looks white, brown, black, or leathery; was caused by chemicals or electricity; or happened to a child. Call 911 for large or deep burns, trouble breathing, or signs of shock.",
+        'For a **chemical burn**, brush off any dry powder first. Then flush the skin with cool running water for at least 15 minutes.',
+        "For a small burn you're treating at home, call a clinician if it blisters, still hurts after 2 days, or shows signs of infection, like pus, fever, more pain, or red streaks.",
+      ),
+    },
+    {
+      heading: 'When a burn needs emergency care',
+      body: md(
+        '**Call 911** if:',
+        bullets(
+          "The burn is about the size of the person's palm or larger.",
+          'It looks deep: white, brown, black, or leathery skin. The deepest burns may hurt very little.',
+          'It goes all the way around an arm, leg, chest, or neck.',
+          'It was caused by electricity or chemicals. Even a small electrical burn can hide serious injury inside the body.',
+          'The person breathed in smoke or has trouble breathing.',
+          'The person shows signs of shock: pale, cold, or clammy skin, weakness, blue lips, or confusion.',
+          "You aren't sure how serious it is.",
+        ),
+        '**Get emergency care right away** for a burn on the face, hands, feet, genitals, or a joint, and for any burn in a young child or an older adult.',
       ),
     },
     {
@@ -589,7 +606,7 @@ const firstAidBasics: Lesson = {
   keyTakeaways: [
     'Call 911 first (or send someone), then help. The dispatcher can coach you.',
     'For heavy bleeding, press hard and keep pressing. Add cloths on top instead of removing them.',
-    'Cool heat burns under cool running water for 5 to 20 minutes. No ice or butter.',
+    'Cool heat burns under cool running water for 5 to 20 minutes. Call 911 for large, deep, electrical, or chemical burns.',
     'For choking, alternate 5 back blows and 5 abdominal thrusts.',
     'For a sudden collapse, push hard and fast in the center of the chest and use an AED.',
   ],
@@ -610,9 +627,9 @@ const firstAidBasics: Lesson = {
       question: 'What is the best first step for a burn from a hot pan?',
       options: [
         'Hold it under cool running water',
-        'Put ice on it',
-        'Rub butter or oil on it',
-        'Pop any blisters',
+        'Hold an ice pack against it',
+        'Rub butter or oil onto it',
+        'Pop any blisters to drain them',
       ],
       answerIndex: 0,
       explanation:
@@ -675,6 +692,172 @@ const firstAidBasics: Lesson = {
     'CPR',
     'AED',
   ],
+};
+
+const seizureFirstAid: Lesson = {
+  id: 'seizure-first-aid',
+  categoryId: 'emergencies',
+  title: 'Seizures: First Aid and When to Call 911',
+  summary:
+    'How to keep someone safe during a seizure, which common ideas can cause harm, and the signs that mean you should call 911.',
+  readMinutes: 4,
+  level: 'Basics',
+  icon: 'medical-outline',
+  callout: {
+    kind: 'emergency',
+    text: "Call 911 if a seizure lasts longer than 5 minutes, another one starts soon after, the person has trouble breathing or doesn't wake up afterward, they were hurt or the seizure happened in water, or it's their first seizure.",
+  },
+  sections: [
+    {
+      heading: 'What a seizure can look like',
+      body: md(
+        'A seizure is a burst of abnormal electrical activity in the brain. It starts suddenly, and it can look different from person to person:',
+        bullets(
+          'Stiffening, then jerking of the arms and legs, often with a fall',
+          'Drooling, grunting, or losing control of the bladder',
+          'A blank stare, or repeated movements like picking at clothes',
+          'A short blackout followed by confusion',
+        ),
+        'Most seizures stop on their own within a few seconds to a few minutes. Causes include epilepsy, a high fever in young children, a head injury, a stroke, abnormal blood sugar, poisoning, and stopping alcohol or some medicines after long use. Sometimes no cause is found.',
+      ),
+    },
+    {
+      heading: 'During a seizure: keep them safe',
+      body: md(
+        'Your main job is to protect the person from injury until the seizure ends.',
+        steps(
+          '**Stay calm and stay with them.** Check the time so you know how long it lasts.',
+          '**Help them to the ground** if they are falling, and move hard or sharp things away.',
+          '**Put something soft and flat under their head,** like a folded jacket, and remove their eyeglasses.',
+          '**Turn them gently onto their side** with their mouth pointing toward the ground. This helps keep saliva or vomit out of their airway.',
+          '**Loosen anything tight around the neck,** like a tie or collar.',
+          '**Look for a medical ID** bracelet or necklace with seizure instructions.',
+        ),
+      ),
+    },
+    {
+      heading: 'What not to do',
+      body: md(
+        'Some common ideas about seizures can cause harm:',
+        bullets(
+          "**Don't put anything in their mouth,** including your fingers. Forcing something between their teeth can cause injury.",
+          "**Don't hold them down** or try to stop their movements. They can't control the seizure.",
+          "**Don't move them** unless they are in danger, such as near traffic, water, or a hot stove.",
+          "**Don't give food, drinks, or pills** until they are fully awake and alert.",
+          "**Don't give rescue breaths during the seizure.** Start CPR only if the seizure has clearly stopped and they aren't breathing normally.",
+        ),
+      ),
+    },
+    {
+      heading: 'When to call 911',
+      body: md(
+        'Call 911 if:',
+        bullets(
+          'The seizure lasts longer than 5 minutes.',
+          'Another seizure starts soon after the first one.',
+          "The person has trouble breathing, or doesn't wake up or act normally afterward.",
+          'They were hurt during the seizure, or it happened in water.',
+          "It's their first seizure, or they have no medical ID with seizure instructions.",
+          'They are pregnant or have diabetes.',
+          'The seizure seems different from their usual seizures.',
+        ),
+        "Report every seizure to the person's clinician, who may need to adjust their treatment.",
+      ),
+    },
+    {
+      heading: 'After the seizure',
+      body: md(
+        'When a seizure ends, the person may be sleepy or confused for a while. To help them recover:',
+        bullets(
+          'Stay with them until they are fully awake and alert.',
+          'Help them sit in a safe place when they are ready.',
+          'Once they are alert, calmly comfort them and explain what happened.',
+          'Offer to call a friend or family member to help them get home safely.',
+        ),
+        "Call 911 if they have trouble breathing, don't wake up, or were hurt.",
+      ),
+    },
+    {
+      heading: 'Seizures with a fever in young children',
+      body: md(
+        'Some children between 6 months and 5 years old have a seizure when they have a fever. This is called a **febrile seizure**. It can be frightening to watch, but a simple febrile seizure is usually harmless. There is no evidence that it causes brain damage or epilepsy.',
+        "Use the same first aid: lay the child on their side on a safe surface, don't hold them down, and don't put anything in their mouth. Don't put the child in a cold bath.",
+        'Call 911 if your child has a seizure with a fever. A clinician needs to check the child and find the cause of the fever.',
+      ),
+    },
+  ],
+  keyTakeaways: [
+    'Stay with the person, time the seizure, and turn them gently onto their side.',
+    "Never put anything in their mouth, and don't hold them down.",
+    "Call 911 if a seizure lasts longer than 5 minutes, it's their first seizure, or they have trouble breathing or waking up.",
+    'Most seizures stop on their own within a few minutes.',
+  ],
+  quiz: [
+    {
+      question: 'A coworker falls to the floor and starts jerking. What should you do?',
+      options: [
+        'Hold their arms and legs down',
+        'Put a wallet between their teeth',
+        'Splash cold water on their face',
+        'Turn them gently onto their side',
+      ],
+      answerIndex: 3,
+      explanation:
+        'Move hard things away, cushion their head, and turn them gently onto their side. Never hold someone down or put anything in their mouth during a seizure.',
+    },
+    {
+      question: 'A friend with epilepsy is having a seizure. When should you call 911?',
+      options: [
+        'Only if it lasts over 30 minutes',
+        'If it lasts more than 5 minutes',
+        'Never, since they have epilepsy',
+        'Only once the seizure has ended',
+      ],
+      answerIndex: 1,
+      explanation:
+        'Time every seizure. Call 911 if it lasts longer than 5 minutes, another seizure follows, the person has trouble breathing or waking up, or they were hurt.',
+    },
+    {
+      question: 'The seizure has stopped, and the person is drowsy and confused. What should you do?',
+      options: [
+        'Give them water to help them wake up',
+        'Stay with them until they are alert',
+        'Leave so they can rest in private',
+        'Give them their seizure pills now',
+      ],
+      answerIndex: 1,
+      explanation:
+        "Sleepiness and confusion after a seizure are common. Stay with them, and don't give food, drinks, or pills until they are fully awake and alert.",
+    },
+  ],
+  sources: [
+    {
+      title: 'First Aid for Seizures',
+      publisher: 'CDC',
+      url: 'https://www.cdc.gov/epilepsy/first-aid-for-seizures/index.html',
+    },
+    {
+      title: 'Seizures',
+      publisher: 'NIH MedlinePlus Medical Encyclopedia',
+      url: 'https://medlineplus.gov/ency/article/003200.htm',
+    },
+    {
+      title: 'Febrile seizures',
+      publisher: 'NIH MedlinePlus Medical Encyclopedia',
+      url: 'https://medlineplus.gov/ency/article/000980.htm',
+    },
+    {
+      title: 'Seizures',
+      publisher: 'NIH MedlinePlus',
+      url: 'https://medlineplus.gov/seizures.html',
+    },
+  ],
+  askBrianPrompts: [
+    'What is a seizure action plan, and who needs one?',
+    'What can trigger a seizure in someone with epilepsy?',
+    'What should I do if my child has a seizure with a fever?',
+  ],
+  tags: ['seizure', 'convulsion', 'epilepsy', 'febrile seizure', 'first aid', '911', 'emergency'],
 };
 
 const anaphylaxisEpinephrine: Lesson = {
@@ -760,7 +943,7 @@ const anaphylaxisEpinephrine: Lesson = {
         bullets(
           '**Carry two doses** of epinephrine at all times. Some reactions need a second dose.',
           '**Know your device.** Epinephrine comes as auto-injectors and, since 2024, as a nasal spray approved for some people. Practice with a trainer device if one is available.',
-          "**Check expiration dates,** and store epinephrine as the label says. Don't leave it in a very hot or very cold car.",
+          "**Check expiration dates** and replace devices before they expire. In an emergency, if an expired device is the only one you have, use it anyway. Store epinephrine as the label says, and don't leave it in a very hot or very cold car.",
           '**Wear a medical ID** bracelet or necklace.',
           '**Read food labels,** and ask about ingredients when eating out.',
           '**Teach others** where your epinephrine is and how to use it.',
@@ -792,7 +975,12 @@ const anaphylaxisEpinephrine: Lesson = {
     },
     {
       question: 'Where is an epinephrine auto-injector usually given?',
-      options: ['The upper arm', 'The belly', 'The middle of the outer thigh', 'The buttock'],
+      options: [
+        'The back of the upper arm',
+        'The skin of the lower belly',
+        'The middle of the outer thigh',
+        'The side of the buttock',
+      ],
       answerIndex: 2,
       explanation:
         'Auto-injectors are pressed into the middle of the outer thigh, and they can go through clothing. Always follow the instructions on your device.',
@@ -887,11 +1075,12 @@ const poisoningOverdoseNaloxone: Lesson = {
         'While you call for help:',
         bullets(
           "**Swallowed something:** Don't make the person throw up unless poison control or a clinician tells you to. Never give anything by mouth to someone who is unconscious or very drowsy.",
+          '**Swallowed a button battery:** Act now, even if the person seems fine. Call the National Battery Ingestion Hotline (1-800-498-8666) or Poison Help. Most people need an X-ray right away, so be ready to go to the ER. A stuck battery can badly burn the throat in 2 hours.',
           '**On the skin:** Take off any clothing the substance touched and rinse the skin with water.',
           '**In the eyes:** Rinse with clean, lukewarm water, and ask Poison Help how long to keep rinsing.',
           "**Breathed in fumes:** Get to fresh air if it's safe to do so. If a carbon monoxide alarm goes off, or several people suddenly feel sick with headache, dizziness, or nausea, get everyone outside and call 911.",
         ),
-        "Keep the product container with you. The label helps experts know what was involved. Be ready to share the person's age and weight, what they took, how much, and when.",
+        "Keep the product container with you, since the label helps the experts. Be ready to share the person's age and weight, what they took, how much, and when.",
       ),
     },
     {
@@ -929,11 +1118,12 @@ const poisoningOverdoseNaloxone: Lesson = {
     {
       heading: 'Get naloxone and prevent poisonings',
       body: md(
-        "Naloxone nasal spray has been approved for sale without a prescription since 2023. Look for it at pharmacies and some other stores, and ask your health department about free programs. Keep it on hand if you or someone you live with takes prescription opioids or uses drugs, and tell others where it is.",
+        "Naloxone nasal spray is sold over the counter, so you don't need a prescription. Look for it at pharmacies, and ask your health department about free programs. Keep it on hand if you or someone you live with takes prescription opioids or uses drugs, and tell others where it is.",
         "Most states have Good Samaritan laws that may protect a person who is overdosing, and the person who calls for help, from certain criminal charges. Details vary by state. Don't let fear stop you from calling 911.",
         'To prevent poisonings at home:',
         bullets(
           "Keep medicines and chemicals locked up and out of children's sight and reach.",
+          'Keep button batteries away from children, and make sure battery covers on devices are closed tight.',
           'Keep products in their original containers. Never store chemicals in food or drink containers.',
           "Get rid of medicines you don't need through a drug take-back program.",
           "Don't mix medicines, alcohol, or other drugs without checking with a pharmacist or clinician.",
@@ -952,10 +1142,10 @@ const poisoningOverdoseNaloxone: Lesson = {
     {
       question: 'A toddler swallowed some of your pills but is awake and acting normal. What should you do?',
       options: [
-        'Make them throw up',
-        'Wait to see if symptoms develop',
+        'Make them throw up to empty the stomach',
+        'Wait to see if any symptoms develop',
         'Give milk and put them down for a nap',
-        'Call Poison Help at 1-800-222-1222 right away',
+        'Call Poison Help at 1-800-222-1222 now',
       ],
       answerIndex: 3,
       explanation:
@@ -964,10 +1154,10 @@ const poisoningOverdoseNaloxone: Lesson = {
     {
       question: 'Which of these is a sign of an opioid overdose?',
       options: [
-        'Pinpoint pupils and slow or stopped breathing',
+        'Tiny pupils and slow or stopped breathing',
         'Fast talking and trouble sitting still',
-        'Large pupils and laughing',
-        'Sneezing and a runny nose',
+        'Large pupils and uncontrolled laughing',
+        'Sneezing, a runny nose, and itchy eyes',
       ],
       answerIndex: 0,
       explanation:
@@ -977,13 +1167,13 @@ const poisoningOverdoseNaloxone: Lesson = {
       question: 'You gave naloxone and the person woke up. What should you do next?',
       options: [
         'Let them sleep it off alone',
-        'Stay with them and make sure they get medical care, because naloxone can wear off',
+        'Stay with them until help arrives',
         'Give them coffee and send them home',
-        'Nothing else is needed',
+        'Nothing, since they are awake now',
       ],
       answerIndex: 1,
       explanation:
-        'Naloxone lasts only 30 to 90 minutes, and many opioids last longer, so the overdose can return. Stay with the person until emergency help takes over.',
+        'Naloxone lasts only 30 to 90 minutes, and many opioids last longer, so the overdose can return. Stay with the person until emergency help takes over, and make sure they get medical care.',
     },
   ],
   sources: [
@@ -1008,9 +1198,9 @@ const poisoningOverdoseNaloxone: Lesson = {
       url: 'https://nida.nih.gov/publications/drugfacts/naloxone',
     },
     {
-      title: 'FDA Approves First Over-the-Counter Naloxone Nasal Spray',
-      publisher: 'FDA',
-      url: 'https://www.fda.gov/news-events/press-announcements/fda-approves-first-over-counter-naloxone-nasal-spray',
+      title: 'Swallowed a button battery? Battery in the nose or ear?',
+      publisher: 'Poison Control (National Capital Poison Center)',
+      url: 'https://www.poison.org/battery',
     },
   ],
   askBrianPrompts: [
@@ -1028,6 +1218,7 @@ const poisoningOverdoseNaloxone: Lesson = {
     'fentanyl',
     'naloxone',
     'carbon monoxide',
+    'button battery',
     '911',
   ],
 };
@@ -1144,10 +1335,10 @@ const concussionHeadInjury: Lesson = {
       question:
         'Your 78-year-old mother takes a blood thinner. She bumped her head in a fall but says she feels fine. What should she do?',
       options: [
-        'Get checked by a healthcare provider right away',
-        'Nothing, since she feels fine',
-        'Take an aspirin for the bump',
-        'Wait a week and see',
+        'Get checked by a provider right away',
+        'Nothing, since she says she feels fine',
+        'Take an aspirin for the bump and rest',
+        'Wait a week and see if anything changes',
       ],
       answerIndex: 0,
       explanation:
@@ -1157,9 +1348,9 @@ const concussionHeadInjury: Lesson = {
       question: 'A teen gets hit in the head during a game and feels dizzy. When can they return to play?',
       options: [
         'After 15 minutes of rest on the bench',
-        'As soon as the dizziness stops',
-        'Not the same day, and only after a healthcare provider clears them',
-        'Next quarter, if they wear a better helmet',
+        'As soon as the dizziness goes away',
+        'Only after a provider clears them',
+        'Next quarter, with a better helmet',
       ],
       answerIndex: 2,
       explanation:
@@ -1305,10 +1496,10 @@ const mentalHealthCrisis988: Lesson = {
     {
       question: 'Who can contact the 988 Lifeline?',
       options: [
-        'Only people who are actively planning suicide',
-        'Only veterans',
-        'Anyone in emotional distress or a substance use crisis, or anyone worried about someone else',
-        'Only people with health insurance',
+        'Only people who are planning suicide',
+        'Only veterans and service members',
+        'Anyone in crisis or worried about someone',
+        'Only people who have health insurance',
       ],
       answerIndex: 2,
       explanation:
@@ -1317,14 +1508,14 @@ const mentalHealthCrisis988: Lesson = {
     {
       question: 'Does asking someone directly whether they are thinking about suicide put the idea in their head?',
       options: [
-        'No. Studies show asking does not increase suicidal thoughts or behavior',
+        'No. Asking does not raise the risk',
         'Yes, so it is better to avoid the topic',
         'Only if you ask more than once',
-        'Only for teenagers',
+        'Only if the person is a teenager',
       ],
       answerIndex: 0,
       explanation:
-        'Asking directly opens the door to a conversation. Research suggests that talking about suicide may actually reduce suicidal thoughts.',
+        'Studies show that asking directly does not increase suicidal thoughts or behavior. It opens the door to a conversation, and talking about suicide may actually reduce suicidal thoughts.',
     },
     {
       question: 'A friend texts that they just swallowed a large number of pills. What should you do first?',
@@ -1389,6 +1580,7 @@ export const lessons: Lesson[] = [
   heartAttackWarningSigns,
   carAccidentWhatToDo,
   firstAidBasics,
+  seizureFirstAid,
   anaphylaxisEpinephrine,
   poisoningOverdoseNaloxone,
   concussionHeadInjury,

@@ -68,35 +68,41 @@ const ConfirmContext = createContext<ConfirmFn | null>(null);
 
 /** Provides `useConfirm()`. Mounted once in the root layout. */
 export function ConfirmProvider({ children }: { children: ReactNode }) {
-  const [options, setOptions] = useState<ConfirmOptions | null>(null);
+  // Closing only flips `open`: the last options stay rendered so the dialog keeps its title and
+  // button labels/colours while the modal fades out (instead of flashing an empty "Confirm" card).
+  const [dialog, setDialog] = useState<{ open: boolean; options: ConfirmOptions }>({
+    open: false,
+    options: { title: '' },
+  });
   const resolver = useRef<((value: boolean) => void) | null>(null);
 
   const settle = useCallback((value: boolean) => {
     resolver.current?.(value);
     resolver.current = null;
-    setOptions(null);
+    setDialog((d) => (d.open ? { ...d, open: false } : d));
   }, []);
 
   const confirm = useCallback<ConfirmFn>((opts) => {
     resolver.current?.(false); // only one dialog at a time
-    setOptions(opts);
+    setDialog({ open: true, options: opts });
     return new Promise<boolean>((resolve) => {
       resolver.current = resolve;
     });
   }, []);
 
   const value = useMemo(() => confirm, [confirm]);
+  const { open, options } = dialog;
 
   return (
     <ConfirmContext value={value}>
       {children}
       <ConfirmDialog
-        visible={!!options}
-        title={options?.title ?? ''}
-        message={options?.message}
-        confirmLabel={options?.confirmLabel}
-        cancelLabel={options?.cancelLabel}
-        destructive={options?.destructive}
+        visible={open}
+        title={options.title}
+        message={options.message}
+        confirmLabel={options.confirmLabel}
+        cancelLabel={options.cancelLabel}
+        destructive={options.destructive}
         onConfirm={() => settle(true)}
         onCancel={() => settle(false)}
       />

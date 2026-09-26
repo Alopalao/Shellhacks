@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { colors, radius, spacing } from '@/theme';
 import { AppText } from './AppText';
 import type { IoniconName } from './Button';
 
 export interface ChipProps {
   label: string;
-  /** Selected chips are yellow with a black label. */
+  /** Selected chips are yellow with a black label. Pass it (true/false) for toggle/filter chips. */
   selected?: boolean;
   /** Makes the chip a toggle/filter button. */
   onPress?: () => void;
@@ -19,7 +19,11 @@ export interface ChipProps {
 }
 
 /** Filter/selection chip or removable tag. */
-export function Chip({ label, selected = false, onPress, onRemove, icon, disabled, accessibilityLabel, style }: ChipProps) {
+export function Chip({ label, selected: selectedProp, onPress, onRemove, icon, disabled, accessibilityLabel, style }: ChipProps) {
+  const selected = !!selectedProp;
+  // Toggle chips announce their state on the web as a pressed/not-pressed button
+  // (react-native-web ignores accessibilityState).
+  const webPressed = Platform.OS === 'web' && selectedProp !== undefined ? selected : undefined;
   const fg = colors.text;
   const content = (
     <>
@@ -45,6 +49,7 @@ export function Chip({ label, selected = false, onPress, onRemove, icon, disable
           accessibilityRole="button"
           accessibilityLabel={accessibilityLabel ?? label}
           accessibilityState={{ selected, disabled: !!disabled }}
+          aria-pressed={webPressed}
           hitSlop={{ top: 6, bottom: 6 }}
           style={({ pressed }) => [...chipStyle, pressed && !selected && styles.pressed]}
         >

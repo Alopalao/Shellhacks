@@ -52,6 +52,20 @@ function describe(item: ActivityItem, dir: ActivityDirectory): Described {
         subtitle: 'Allergies, conditions or pharmacy may have changed',
         href: chart,
       };
+    case 'joined':
+      return {
+        icon: 'person-add-outline',
+        title: `${firstName(item.name) || first} joined your patient list`,
+        subtitle: 'Review their allergies, conditions and medications',
+        href: chart,
+      };
+    case 'left':
+      return {
+        icon: 'person-remove-outline',
+        title: `${firstName(item.name) || first} switched to another physician`,
+        subtitle: 'Any pending refill requests moved with them',
+        href: '/doctor',
+      };
     case 'medication':
       return {
         icon: 'medkit-outline',
@@ -81,7 +95,7 @@ export function ActivityFeed({ items, directory, now, limit = 20 }: ActivityFeed
         compact
         icon="pulse-outline"
         title="Waiting for live activity"
-        message="While you're signed in, doses logged, refill requests, messages and profile updates from your patients appear here instantly."
+        message="While you're signed in, doses logged, refill requests, messages, profile updates and new patients appear here instantly."
       />
     );
   }

@@ -64,4 +64,5 @@ export interface Lesson {
   sources: LessonSource[]; // 2–5
   askBrianPrompts: string[]; // 2–3 follow-up questions the user can send to BRIAN AI
   tags: string[]; // search keywords
+  lastReviewed?: string; // 'YYYY-MM' when time-sensitive figures (costs, limits, deadlines) were last checked
 }

@@ -19,10 +19,14 @@ export function TabIcon({ focused, icon, focusedIcon }: TabIconProps) {
   );
 }
 
-/** Helper for `options={{ tabBarIcon: tabIcon('home-outline', 'home') }}`. */
-export function tabIcon(icon: IoniconName, focusedIcon?: IoniconName) {
+/**
+ * Helper for `options={{ tabBarIcon: tabIcon('home-outline', 'home') }}`.
+ * `alwaysFocused` draws the active look even when the navigator hasn't focused this tab (used while
+ * one of its hidden sibling routes is on screen).
+ */
+export function tabIcon(icon: IoniconName, focusedIcon?: IoniconName, alwaysFocused = false) {
   function renderTabIcon({ focused }: { focused: boolean }) {
-    return <TabIcon focused={focused} icon={icon} focusedIcon={focusedIcon} />;
+    return <TabIcon focused={focused || alwaysFocused} icon={icon} focusedIcon={focusedIcon} />;
   }
   return renderTabIcon;
 }

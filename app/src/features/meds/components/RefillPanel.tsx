@@ -7,7 +7,7 @@ import { api, errorMessage, isApiRequestError } from '@/lib/api';
 import type { Prescription, RefillRequest } from '@/lib/contracts';
 import { formatRelative, pluralize } from '@/lib/format';
 import { colors, radius, spacing } from '@/theme';
-import { medLabel, REFILL_STATUS_LABEL, refillsLabel } from '../format';
+import { medLabel, REFILL_STATUS_LABEL, refillState, refillsLabel } from '../format';
 
 export interface RefillPanelProps {
   rx: Prescription;
@@ -22,6 +22,8 @@ export interface RefillPanelProps {
   onRequested: (refill: RefillRequest) => void;
   /** True when the medication is discontinued or ended. */
   past?: boolean;
+  /** Current time (for "just prescribed" vs. "out of refills"). Defaults to render time. */
+  now?: Date;
 }
 
 const MAX_NOTE = 500;
@@ -39,7 +41,7 @@ function conflictRefill(error: unknown): RefillRequest | null {
 }
 
 /** Refills left, the latest request's status (live), and a "request refill" composer. */
-export function RefillPanel({ rx, refills, loading, error, onRetry, doctorName, onRequested, past = false }: RefillPanelProps) {
+export function RefillPanel({ rx, refills, loading, error, onRetry, doctorName, onRequested, past = false, now }: RefillPanelProps) {
   const toast = useToast();
   const [composing, setComposing] = useState(false);
   const [note, setNote] = useState('');
@@ -47,6 +49,7 @@ export function RefillPanel({ rx, refills, loading, error, onRetry, doctorName, 
 
   const latest = refills?.[0];
   const pending = latest?.status === 'pending';
+  const state = refillState(rx, now);
   const outOfRefills = rx.refillsRemaining === 0;
   const actionLabel = outOfRefills ? 'Request renewal' : 'Request refill';
 
@@ -87,17 +90,19 @@ export function RefillPanel({ rx, refills, loading, error, onRetry, doctorName, 
   return (
     <View style={styles.container}>
       <View style={styles.countRow}>
-        <View style={[styles.countTile, outOfRefills && styles.countTileEmpty]}>
+        <View style={[styles.countTile, state === 'out' && !past && styles.countTileEmpty]}>
           <AppText variant="title2">{rx.refillsRemaining}</AppText>
         </View>
         <View style={styles.flex}>
-          <AppText variant="bodyStrong">{refillsLabel(rx.refillsRemaining)}</AppText>
+          <AppText variant="bodyStrong">{refillsLabel(rx.refillsRemaining, past ? undefined : state)}</AppText>
           <AppText variant="small" tone="muted">
             {past
               ? 'This medication was stopped, so it can’t be refilled.'
-              : outOfRefills
-                ? `Ask ${doctorName} to renew your prescription before you run out.`
-                : 'Your pharmacy can refill it. You can also ask for more.'}
+              : state === 'first-fill'
+                ? `This prescription came without refills. If you’ll need more, ask ${doctorName} before you run out.`
+                : outOfRefills
+                  ? `Ask ${doctorName} to renew your prescription before you run out.`
+                  : 'Your pharmacy can refill it. You can also ask for more.'}
           </AppText>
         </View>
       </View>

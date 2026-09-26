@@ -65,7 +65,10 @@ export function createAuthRouter(ctx: ServerContext): Router {
       }
     }
 
-    const session = createSession(ctx.db, user.id);
+    const realtime = isRealtimeServer(ctx.realtime) ? ctx.realtime : undefined;
+    const { session, evicted } = createSession(ctx.db, user.id, { isLive: realtime?.hasLiveSocket });
+    // A device signed out by the per-user session cap must stop receiving this user's events.
+    if (evicted.length > 0) realtime?.disconnectInvalidSessions();
     const body: LoginResponse = { status: 'lgtm', token: session.token, user, isNewUser };
     res.json(body);
   });

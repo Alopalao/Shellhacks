@@ -42,7 +42,7 @@ export const lessons: Lesson[] = [
           '- Try saline (salt-water) nose spray or drops for a stuffy nose.',
           '- Use lozenges or cough drops for a sore throat (not for children under 4).',
           '- **Honey** can ease a cough for adults and children 1 year and older. Never give honey to a baby under 12 months.',
-          "- Over-the-counter pain and fever relievers such as acetaminophen or ibuprofen can help. Follow the label, and check the active ingredients so you don't take the same medicine twice in a combination cold product.",
+          "- Over-the-counter pain and fever relievers such as acetaminophen or ibuprofen can help. Follow the label, and check the active ingredients so you don't take the same medicine twice in a combination cold product. If you take too much by mistake, call Poison Help at 1-800-222-1222.",
           '',
           "CDC does not recommend over-the-counter cough and cold medicines for children under 6. If you take prescription medicines, ask a pharmacist which over-the-counter products are safe for you.",
         ),
@@ -86,8 +86,11 @@ export const lessons: Lesson[] = [
           '- A seizure',
           '- Sudden weakness, numbness, or drooping on one side of the body, or sudden trouble speaking or seeing',
           '- Signs of severe dehydration, such as not urinating',
+          '- Signs of **sepsis** when an infection is getting worse, such as confusion, a racing heart, fast breathing, extreme pain, or clammy skin. Ask, "Could this infection be leading to sepsis?"',
           '',
-          "In children, also watch for fast breathing or ribs pulling in with each breath, and any fever in a baby younger than 12 weeks. If you're very sick, don't drive yourself.",
+          "In children, also watch for fast breathing or ribs pulling in with each breath. If you're very sick, don't drive yourself.",
+          '',
+          "A baby 3 months or younger with a rectal temperature of 100.4°F (38°C) or higher needs to be seen right away. Call their clinician now, or go to the emergency room if you can't reach them quickly.",
         ),
       },
       {
@@ -109,7 +112,7 @@ export const lessons: Lesson[] = [
       "Most colds and mild viral illnesses get better with rest, fluids, and time. Antibiotics don't help viruses.",
       'Stay home until your symptoms have been improving and you have had no fever (without medicine) for 24 hours, then take extra precautions for 5 more days.',
       'Call a clinician if symptoms last more than 10 days, get better and then worse, or you are at higher risk for complications.',
-      'Call 911 for trouble breathing, chest pain or pressure, new confusion, bluish lips, or a seizure.',
+      'Call 911 for trouble breathing, chest pain or pressure, new confusion, bluish lips, a seizure, or signs of sepsis.',
     ],
     quiz: [
       {
@@ -128,7 +131,7 @@ export const lessons: Lesson[] = [
         question: 'According to CDC, when can you usually go back to normal activities after a respiratory illness?',
         options: [
           'As soon as one home test is negative',
-          'When, for at least 24 hours, your symptoms are improving overall and you have had no fever without fever-reducing medicine',
+          'After 24 hours of improving and no fever',
           'After exactly 10 days, no matter how you feel',
           'As soon as you start taking an antibiotic',
         ],
@@ -139,10 +142,10 @@ export const lessons: Lesson[] = [
       {
         question: "Why don't antibiotics help with most colds?",
         options: [
-          'Colds are caused by viruses, and antibiotics only work against bacteria',
+          'Colds are caused by viruses, not bacteria',
           'Colds are too mild for medicine to matter',
           'Antibiotics only work when given as a shot',
-          'Antibiotics need at least a month to start working',
+          'Antibiotics take a month to start working',
         ],
         answerIndex: 0,
         explanation:
@@ -181,7 +184,7 @@ export const lessons: Lesson[] = [
       'How do I know if my cough needs to be checked by a doctor?',
       'Am I at higher risk for complications from the flu or COVID-19?',
     ],
-    tags: ['sick', 'cold', 'self-care', 'when to see a doctor', 'urgent care', 'telehealth', 'red flags', 'antibiotics', 'stay home', 'cough'],
+    tags: ['sick', 'cold', 'self-care', 'when to see a doctor', 'urgent care', 'telehealth', 'red flags', 'antibiotics', 'stay home', 'cough', 'sepsis'],
   },
 
   // ───────────────────────────── 2. Describing symptoms ─────────────────────────────
@@ -288,10 +291,10 @@ export const lessons: Lesson[] = [
       {
         question: 'Which description gives your clinician the most useful information?',
         options: [
-          '"My stomach hurts."',
-          '"For 2 weeks I\'ve had a burning pain in my upper stomach. It\'s worse after meals and about a 6 out of 10."',
-          '"It\'s probably nothing, but I feel off."',
-          '"I looked it up online and I\'m sure it\'s an ulcer."',
+          '"My stomach has been hurting, and I just feel awful all the time."',
+          '"For 2 weeks I\'ve had burning upper stomach pain, worse after meals, about 6 of 10."',
+          '"It\'s probably nothing, but I feel off and wanted someone to take a look."',
+          '"I looked it up online, and I\'m sure it\'s an ulcer. I need medicine for it."',
         ],
         answerIndex: 1,
         explanation:
@@ -300,14 +303,14 @@ export const lessons: Lesson[] = [
       {
         question: 'What should your medication list include?',
         options: [
-          'Only prescription drugs',
+          'Prescriptions, but not vitamins or supplements',
           'Only the medicines you take every day',
-          'All prescriptions, over-the-counter medicines, vitamins, and supplements',
-          'Only medicines prescribed by this clinician',
+          'Everything, including vitamins and supplements',
+          'Just the medicines this clinician prescribed',
         ],
         answerIndex: 2,
         explanation:
-          'Over-the-counter products and supplements can cause side effects and interact with prescriptions, so your clinician needs to know about everything you take.',
+          'List all prescriptions, over-the-counter medicines, vitamins, and supplements. Over-the-counter products and supplements can cause side effects and interact with prescriptions, so your clinician needs to know about everything you take.',
       },
       {
         question: 'Why is it helpful to take a photo of a rash?',
@@ -390,7 +393,7 @@ export const lessons: Lesson[] = [
         body: md(
           'Home tests for COVID-19 are sold at pharmacies, and some home tests check for both flu and COVID-19. Clinics can run lab tests that are more sensitive, including tests that check for both viruses at once.',
           '',
-          "Home antigen tests can miss an early infection. FDA advises that if you have symptoms and test negative, **test again 48 hours later**. A negative test doesn't rule out infection, especially early on.",
+          "Most home COVID-19 tests are antigen tests, often called rapid tests. They can miss an early infection. FDA advises that if you have symptoms and test negative, **test again 48 hours later**. A negative test doesn't rule out infection, especially early on.",
           '',
           "If you're at higher risk, don't wait for a home test before calling your clinician. For flu, clinicians may start treatment based on your symptoms, especially during flu season.",
         ),
@@ -412,7 +415,7 @@ export const lessons: Lesson[] = [
           '',
           '- Adults 65 and older (COVID-19 risk rises further after 75)',
           '- Young children (for flu), and people who are pregnant',
-          '- People with chronic conditions such as asthma, COPD, diabetes, heart disease, kidney or liver disease, or obesity',
+          '- People with chronic conditions such as asthma, COPD (a long-term lung disease such as emphysema), diabetes, heart disease, kidney or liver disease, or obesity',
           '- People with a weakened immune system',
           '- People who are not up to date on their vaccines',
           '',
@@ -433,7 +436,7 @@ export const lessons: Lesson[] = [
     keyTakeaways: [
       "You can't reliably tell flu from COVID-19 by symptoms alone. Testing helps you get the right treatment.",
       'Flu antivirals work best within 2 days of symptoms. COVID-19 antiviral pills must start within 5 days.',
-      'If you have symptoms and a negative home COVID-19 antigen test, test again in 48 hours.',
+      'If you have symptoms and a negative rapid (antigen) home COVID-19 test, test again in 48 hours.',
       'If you are at higher risk, contact your clinician as soon as symptoms start.',
       'Antibiotics do not treat colds, flu, or COVID-19.',
     ],
@@ -451,7 +454,7 @@ export const lessons: Lesson[] = [
           'CDC says flu antivirals work best when started within 2 days of symptoms, though starting later can still help people who are very sick or at higher risk.',
       },
       {
-        question: 'You have symptoms and a negative home COVID-19 antigen test. What does FDA advise?',
+        question: 'You have symptoms and a negative rapid (antigen) home COVID-19 test. What does FDA advise?',
         options: [
           'You definitely do not have COVID-19',
           'Test again 48 hours later',
@@ -464,10 +467,10 @@ export const lessons: Lesson[] = [
       },
       {
         question: 'Which symptom is more common with COVID-19 than with flu?',
-        options: ['Runny nose', 'Cough', 'New loss of taste or smell', 'Tiredness'],
+        options: ['A runny or stuffy nose', 'Cough and sore throat', 'New loss of taste or smell', 'Tiredness and body aches'],
         answerIndex: 2,
         explanation:
-          'Both illnesses can cause cough, congestion, and tiredness, but a new loss of taste or smell is more common with COVID-19.',
+          'Both illnesses can cause cough, sore throat, congestion, tiredness, and aches, but a new loss of taste or smell is more common with COVID-19.',
       },
     ],
     sources: [
@@ -517,7 +520,7 @@ export const lessons: Lesson[] = [
     icon: 'thermometer-outline',
     callout: {
       kind: 'emergency',
-      text: 'Call 911 if a fever comes with trouble breathing, a stiff neck, a severe headache, confusion, a seizure, blue lips or nails, or a person who is hard to wake. A baby 3 months or younger with a rectal temperature of 100.4°F (38°C) or higher needs a clinician right away.',
+      text: "Call 911 if a fever comes with trouble breathing, a stiff neck, a severe headache, confusion, a seizure, blue lips or nails, or a person who is hard to wake. A baby 3 months or younger with a rectal temperature of 100.4°F (38°C) or higher needs to be seen right away: call their clinician now, or go to the emergency room if you can't reach them quickly.",
     },
     sections: [
       {
@@ -549,13 +552,13 @@ export const lessons: Lesson[] = [
           "- Dose children's medicine by the label, using their weight or age, and measure with the device that comes with the product.",
           '- **Babies under 3 months:** call their clinician before giving any medicine. **Do not give ibuprofen to babies under 6 months.**',
           "- **Don't give aspirin to children or teens** unless their clinician says to. It has been linked to Reye syndrome, a rare but serious illness.",
-          '- Check combination cold products for acetaminophen so you don\'t double up.',
+          "- Check combination cold products for acetaminophen so you don't double up. If you think someone took too much, even by accident, call Poison Help at 1-800-222-1222 right away. Don't wait for symptoms, which may not show up for 12 hours or more.",
         ),
       },
       {
         heading: 'Babies and children: call the clinician if…',
         body: md(
-          '- Your baby is **3 months or younger** and has a rectal temperature of 100.4°F (38°C) or higher. CDC treats any fever in a baby under 12 weeks as an emergency warning sign.',
+          "- Your baby is **3 months or younger** and has a rectal temperature of 100.4°F (38°C) or higher. The baby needs to be seen right away: call now, or go to the emergency room if you can't reach the clinician quickly.",
           '- Your baby is **3 to 12 months** old and has a fever of 102.2°F (39°C) or higher.',
           '- A child **under 2** has had a fever for more than 24 to 48 hours, or an older child for more than 48 to 72 hours.',
           "- The fever is 105°F (40.6°C) or higher and doesn't come down quickly with treatment.",
@@ -574,7 +577,7 @@ export const lessons: Lesson[] = [
           '- Have a fever that stays at or keeps rising above 103°F (39.4°C)',
           '- Have had a fever for longer than 48 to 72 hours',
           '- Have had fevers come and go for up to a week or more, even if they are mild',
-          '- Have a serious chronic illness, such as heart disease, diabetes, COPD, or sickle cell disease',
+          '- Have a serious chronic illness, such as heart disease, diabetes, COPD (a long-term lung disease), or sickle cell disease',
           '- Have a weakened immune system, for example from chemotherapy or an organ transplant',
           '- Have a new rash or bruises, or pain when urinating',
           '',
@@ -584,7 +587,7 @@ export const lessons: Lesson[] = [
     ],
     keyTakeaways: [
       'A temperature of 100.4°F (38°C) or higher is generally a fever, but how the person looks and acts matters more than the number.',
-      'Any fever in a baby 3 months or younger needs a call to a clinician right away.',
+      'A baby 3 months or younger with a rectal temperature of 100.4°F (38°C) or higher needs to be seen right away.',
       'Adults should call if a fever stays at 103°F or higher or lasts more than 2 to 3 days.',
       "Never give aspirin to children or teens, and dose children's fever medicine by the label.",
       'Call 911 for fever with trouble breathing, a stiff neck, confusion, a seizure, or blue lips.',
@@ -600,7 +603,7 @@ export const lessons: Lesson[] = [
         ],
         answerIndex: 1,
         explanation:
-          'Babies 3 months and younger with a rectal temperature of 100.4°F or higher need prompt medical care. Ibuprofen should not be given to babies under 6 months.',
+          "Babies 3 months and younger with a rectal temperature of 100.4°F or higher need to be seen right away. Call the clinician now, or go to the emergency room if you can't reach them quickly. Ibuprofen should not be given to babies under 6 months.",
       },
       {
         question: 'Which fever reducer should children and teens NOT take unless their clinician says it is OK?',
@@ -613,9 +616,9 @@ export const lessons: Lesson[] = [
         question: 'For an adult, which is a reason to call a clinician?',
         options: [
           'A temperature of 99.8°F for one evening',
-          'A fever that stays at or keeps rising above 103°F',
-          'Feeling warm right after exercise',
-          'A fever that goes away after one day',
+          'A fever that stays at 103°F or higher',
+          'Feeling warm right after a hard workout',
+          'A mild fever that goes away in a day',
         ],
         answerIndex: 1,
         explanation:
@@ -639,9 +642,9 @@ export const lessons: Lesson[] = [
         url: 'https://medlineplus.gov/ency/article/003400.htm',
       },
       {
-        title: 'Signs and Symptoms of Flu',
-        publisher: 'CDC',
-        url: 'https://www.cdc.gov/flu/signs-symptoms/index.html',
+        title: 'Acetaminophen overdose',
+        publisher: 'NIH MedlinePlus',
+        url: 'https://medlineplus.gov/ency/article/002598.htm',
       },
       {
         title: 'Use Caution When Giving Cough and Cold Products to Kids',
@@ -657,7 +660,171 @@ export const lessons: Lesson[] = [
     tags: ['fever', 'temperature', 'thermometer', 'children', 'babies', 'infant', 'acetaminophen', 'ibuprofen', 'febrile seizure', 'when to call'],
   },
 
-  // ───────────────────────────── 5. Silent conditions ─────────────────────────────
+  // ───────────────────────────── 5. Sepsis ─────────────────────────────
+  {
+    id: 'sepsis-infection-emergency',
+    categoryId: 'illness',
+    title: 'Sepsis: When an Infection Becomes an Emergency',
+    summary:
+      'Almost any infection can lead to sepsis, a life-threatening emergency. Learn the warning signs, who is at higher risk, and why you should act fast.',
+    readMinutes: 4,
+    level: 'Basics',
+    icon: 'alert-circle-outline',
+    callout: {
+      kind: 'emergency',
+      text: 'Sepsis is a medical emergency. If someone with an infection gets worse and has signs like confusion, a racing heart or weak pulse, trouble breathing, extreme pain, or clammy skin, call 911 or go to the emergency room. Ask, "Could this infection be leading to sepsis?"',
+    },
+    sections: [
+      {
+        heading: 'What sepsis is',
+        body: md(
+          "Sepsis is the body's extreme response to an infection. The infection sets off a chain reaction throughout the body. Without quick treatment, sepsis can lead to tissue damage, organ failure, and death.",
+          '',
+          "Almost any infection can lead to sepsis. It often starts with an infection in the lungs, stomach, kidneys, or bladder. It can also begin with a small cut that gets infected, or an infection after surgery. Sometimes people don't even know they had an infection.",
+          '',
+          'Sepsis is common and serious. CDC estimates that about 1.7 million adults in the US develop sepsis each year, and at least 1 in 5 of them die in the hospital or leave the hospital for hospice care.',
+        ),
+      },
+      {
+        heading: 'Warning signs',
+        body: md(
+          'A person with sepsis may have one or more of these signs:',
+          '',
+          '- Confusion or disorientation',
+          '- A fast heart rate or a weak pulse',
+          '- Shortness of breath or fast breathing',
+          '- Extreme pain or discomfort',
+          '- Fever, shivering, or feeling very cold',
+          '- Clammy or sweaty skin',
+          '',
+          'A change in how someone thinks or acts, and very fast breathing, may be the earliest signs. Because these signs can also come from other illnesses, sepsis can be hard to spot early. Be especially alert when **an infection is getting worse instead of better**.',
+        ),
+      },
+      {
+        heading: 'Act fast',
+        body: md(
+          'Sepsis can get worse quickly, and early treatment matters.',
+          '',
+          '1. **Get care right away.** Call 911 or go to the emergency room if someone with an infection is getting worse and has warning signs, especially confusion, trouble breathing, or being hard to wake.',
+          '2. **Ask, "Could this infection be leading to sepsis?"** CDC encourages patients and families to ask a clinician this question.',
+          '3. **Share the details.** Say what infection the person has or might have, when it started, and any recent surgery, hospital stay, or chronic condition.',
+          "4. **Don't wait it out.** If you are already being treated for an infection and it isn't getting better, or is getting worse, get medical care right away.",
+          '',
+          'In the hospital, sepsis is usually treated with antibiotics, IV fluids, oxygen, and care for the source of the infection. Some people also need medicine to raise their blood pressure.',
+        ),
+      },
+      {
+        heading: 'Who is at higher risk',
+        body: md(
+          'Anyone with an infection can get sepsis. CDC says the risk is higher for:',
+          '',
+          '- Adults 65 and older, and babies younger than 1',
+          '- People with chronic conditions such as diabetes, lung disease, cancer, or kidney disease',
+          '- People with a weakened immune system',
+          '- People who recently had a severe illness, surgery, or a hospital stay',
+          '- People who are pregnant or recently gave birth',
+          '- People who have had sepsis before',
+          '',
+          "If you or someone you care for is in one of these groups, learn the warning signs, and don't wait to get help for an infection that is getting worse.",
+        ),
+      },
+      {
+        heading: 'Lower your risk',
+        body: md(
+          'The best way to prevent sepsis is to prevent infections. CDC recommends that you:',
+          '',
+          '- **Get recommended vaccines.** They can prevent some infections or make them less severe.',
+          '- **Keep your hands clean.**',
+          '- **Keep cuts and wounds clean and covered** until they heal.',
+          '- **Take good care of chronic conditions** such as diabetes, lung disease, cancer, and kidney disease.',
+          '- **Consider wearing a mask** around people outside your home when many respiratory viruses are going around.',
+          '',
+          'Know the warning signs, and act fast if an infection is not getting better or is getting worse.',
+        ),
+      },
+    ],
+    keyTakeaways: [
+      "Sepsis is the body's extreme response to an infection. It is a life-threatening medical emergency.",
+      'Warning signs include confusion, a fast heartbeat or weak pulse, shortness of breath, extreme pain, shivering or feeling very cold, and clammy skin.',
+      'If an infection is getting worse instead of better, act fast and ask, "Could this infection be leading to sepsis?"',
+      'Older adults, babies, and people with chronic conditions or weakened immune systems are at higher risk.',
+      'Vaccines, clean hands, and clean, covered wounds help prevent the infections that lead to sepsis.',
+    ],
+    quiz: [
+      {
+        question: 'Which of these could be a warning sign of sepsis in someone with an infection?',
+        options: [
+          'A stuffy nose and sneezing',
+          'Mild tiredness after a busy day',
+          'A slight sore throat for a day',
+          'Confusion and a racing heart',
+        ],
+        answerIndex: 3,
+        explanation:
+          "Confusion, a fast heartbeat or weak pulse, shortness of breath, extreme pain, shivering, and clammy skin can all be signs of sepsis. If someone's infection is getting worse and they have these signs, get emergency care right away.",
+      },
+      {
+        question:
+          'Your father is being treated for a urinary tract infection. Today he is confused, shivering, and breathing fast. What should you do?',
+        options: [
+          'Let him sleep it off tonight',
+          'Get emergency care right now',
+          'Call his doctor next week',
+          'Give him fluids and wait a day',
+        ],
+        answerIndex: 1,
+        explanation:
+          'An infection that is getting worse, with confusion, shivering, and fast breathing, can be sepsis. Call 911 or go to the emergency room, and ask, "Could this infection be leading to sepsis?"',
+      },
+      {
+        question: 'Which of these can help lower your risk of sepsis?',
+        options: [
+          'Keeping cuts clean and covered',
+          'Skipping recommended vaccines',
+          'Waiting out a worsening infection',
+          'Leaving a wound open to the air',
+        ],
+        answerIndex: 0,
+        explanation:
+          'Preventing infections lowers the risk of sepsis. Keep cuts clean and covered until they heal, keep your hands clean, get recommended vaccines, and get care fast for an infection that is getting worse.',
+      },
+    ],
+    sources: [
+      {
+        title: 'About Sepsis',
+        publisher: 'CDC',
+        url: 'https://www.cdc.gov/sepsis/about/index.html',
+      },
+      {
+        title: 'Risk Factors for Sepsis',
+        publisher: 'CDC',
+        url: 'https://www.cdc.gov/sepsis/risk-factors/index.html',
+      },
+      {
+        title: 'Preventing Infections That Can Lead to Sepsis',
+        publisher: 'CDC',
+        url: 'https://www.cdc.gov/sepsis/prevention/index.html',
+      },
+      {
+        title: 'Sepsis',
+        publisher: 'NIH MedlinePlus',
+        url: 'https://medlineplus.gov/sepsis.html',
+      },
+      {
+        title: 'Sepsis',
+        publisher: 'NIH MedlinePlus Medical Encyclopedia',
+        url: 'https://medlineplus.gov/ency/article/000666.htm',
+      },
+    ],
+    askBrianPrompts: [
+      'Which infections are most likely to lead to sepsis?',
+      'How do my health conditions affect my risk of sepsis?',
+      'What should I watch for after surgery or a hospital stay?',
+    ],
+    tags: ['sepsis', 'septic shock', 'infection', 'blood infection', 'emergency', '911', 'warning signs', 'fever', 'confusion'],
+  },
+
+  // ───────────────────────────── 6. Silent conditions ─────────────────────────────
   {
     id: 'silent-conditions-blood-pressure-prediabetes',
     categoryId: 'illness',
@@ -716,9 +883,9 @@ export const lessons: Lesson[] = [
         body: md(
           "Prediabetes means your blood sugar is higher than normal but not high enough to be diabetes. NIDDK lists these prediabetes ranges:",
           '',
-          '- **A1C:** 5.7% to 6.4%',
-          '- **Fasting blood sugar:** 100 to 125 mg/dL',
-          '- **2-hour glucose tolerance test:** 140 to 199 mg/dL',
+          '- **A1C** (a blood test that shows your average blood sugar over the past 3 months): 5.7% to 6.4%',
+          '- **Fasting blood sugar** (checked after not eating overnight): 100 to 125 mg/dL',
+          '- **Oral glucose tolerance test** (blood sugar checked 2 hours after a sweet drink): 140 to 199 mg/dL',
           '',
           'Type 2 diabetes can develop slowly, and many people notice nothing. Possible signs include feeling very thirsty, urinating often, feeling very hungry, blurry vision, tiredness, sores that heal slowly, and frequent infections.',
           '',
@@ -773,10 +940,10 @@ export const lessons: Lesson[] = [
       {
         question: 'What is the best way to check your blood pressure at home?',
         options: [
-          'With a validated upper-arm cuff, after sitting quietly for 5 minutes with your arm at heart level',
-          'With a wrist cuff right after a walk',
-          'One quick reading right after your morning coffee',
-          'Standing up, with your arm hanging at your side',
+          'Upper-arm cuff, after 5 minutes of quiet rest',
+          'Wrist cuff, right after a brisk walk',
+          'One quick reading after your morning coffee',
+          'Standing up, with your arm hanging down',
         ],
         answerIndex: 0,
         explanation:
@@ -818,7 +985,7 @@ export const lessons: Lesson[] = [
     tags: ['high blood pressure', 'hypertension', 'prediabetes', 'diabetes', 'A1C', 'blood sugar', 'cholesterol', 'blood pressure monitor', 'silent killer', 'screening'],
   },
 
-  // ───────────────────────────── 6. Depression & anxiety ─────────────────────────────
+  // ───────────────────────────── 7. Depression & anxiety ─────────────────────────────
   {
     id: 'depression-anxiety-getting-help',
     categoryId: 'illness',
@@ -974,7 +1141,7 @@ export const lessons: Lesson[] = [
     tags: ['depression', 'anxiety', 'mental health', 'panic attack', 'therapy', 'antidepressants', '988', 'suicide prevention', 'crisis', 'SAMHSA'],
   },
 
-  // ───────────────────────────── 7. Cancer warning signs & screening ─────────────────────────────
+  // ───────────────────────────── 8. Cancer warning signs & screening ─────────────────────────────
   {
     id: 'cancer-warning-signs-screening',
     categoryId: 'illness',
@@ -985,8 +1152,8 @@ export const lessons: Lesson[] = [
     level: 'Intermediate',
     icon: 'ribbon-outline',
     callout: {
-      kind: 'tip',
-      text: 'Most of the symptoms in this lesson are caused by something other than cancer. But a change that lasts more than a few weeks, or keeps getting worse, deserves a visit.',
+      kind: 'warning',
+      text: "Most of the symptoms in this lesson are caused by something other than cancer. Get checked if a change lasts more than a few weeks or keeps getting worse. Don't wait weeks for bleeding you can't explain: contact your clinician right away.",
     },
     sections: [
       {
@@ -1018,6 +1185,8 @@ export const lessons: Lesson[] = [
           '- Patches, sores, bleeding, or numbness in the mouth',
           '',
           "NCI advises seeing a doctor if symptoms don't get better after a few weeks.",
+          '',
+          "**Don't wait weeks for bleeding.** Contact your clinician right away for blood in your stool, black or tarry stools, or bleeding or bruising you can't explain. Get blood in your urine checked soon, too. Call 911 or go to the ER if you vomit blood, bleed heavily, or faint.",
         ),
       },
       {
@@ -1040,9 +1209,9 @@ export const lessons: Lesson[] = [
           '',
           '- **Colorectal cancer:** ages 45 to 75. Options include home stool tests (every 1 to 3 years, depending on the test) or a colonoscopy every 10 years.',
           '- **Breast cancer:** a mammogram every 2 years for women 40 to 74.',
-          '- **Cervical cancer:** women 21 to 65. A Pap test every 3 years in your 20s. From 30 to 65, an HPV test every 5 years, HPV plus Pap every 5 years, or a Pap test every 3 years.',
-          '- **Lung cancer:** a yearly low-dose CT scan for adults 50 to 80 with a 20 pack-year smoking history who still smoke or quit within the past 15 years.',
-          '- **Prostate cancer:** men 55 to 69 should decide with a clinician whether to have a PSA test after talking about benefits and harms.',
+          '- **Cervical cancer:** women 21 to 65. A Pap test every 3 years in your 20s. From 30 to 65, an HPV test (for the virus that can cause cervical cancer) every 5 years, HPV plus Pap every 5 years, or a Pap test every 3 years.',
+          '- **Lung cancer:** a yearly low-dose CT scan (a chest scan that uses little radiation) for adults 50 to 80 who have a 20 pack-year smoking history and still smoke or quit within the past 15 years. One pack-year is 1 pack a day for a year, so 1 pack a day for 20 years counts.',
+          '- **Prostate cancer:** men 55 to 69 should decide with a clinician whether to have a PSA (prostate-specific antigen) blood test after weighing the benefits and harms.',
           '',
           'A strong family history or other risk factors may mean starting earlier. Ask your clinician.',
         ),
@@ -1057,15 +1226,16 @@ export const lessons: Lesson[] = [
           "- **Overdiagnosis:** finding a slow cancer that would never have caused problems, which can lead to treatment you didn't need",
           '- **Procedure risks**, such as bleeding from a colonoscopy',
           '',
-          "That's why recommendations have specific age ranges and schedules. If a home stool test is positive, you need a follow-up colonoscopy to finish the screening. In the US, most health plans are required to cover recommended screenings with no cost-sharing when you use an in-network provider, but coverage for follow-up tests varies, so check with your plan.",
+          "That's why recommendations have specific age ranges and schedules. If a home stool test is positive, you need a follow-up colonoscopy to finish the screening. In the US, federal rules count that colonoscopy as part of screening, so most private health plans must cover it with no cost-sharing when you use an in-network provider. Medicare covers it too, though you may owe coinsurance if a polyp is removed. Other follow-up tests and treatment are usually billed as regular care, so check with your plan.",
         ),
       },
     ],
     keyTakeaways: [
-      'See a clinician about any unexplained change that lasts more than a few weeks. Most are not cancer, but they are worth checking.',
+      "See a clinician about any unexplained change that lasts more than a few weeks, and right away for bleeding you can't explain.",
       'Screening looks for cancer before symptoms start, when it is often easier to treat.',
       'Most adults start colorectal screening at 45. Women 40 to 74 should get a mammogram every 2 years.',
       'Screening has trade-offs, and your family history can change when and how you should be screened.',
+      'If a home stool test is positive, get the follow-up colonoscopy. Most plans must cover it as part of screening.',
     ],
     quiz: [
       {
@@ -1081,16 +1251,16 @@ export const lessons: Lesson[] = [
           'They are almost always caused by cancer',
           'Wait until you have at least three symptoms',
           'Only see a doctor if the symptom is painful',
-          "See a doctor if they don't get better after a few weeks",
+          'See a doctor if they last over a few weeks',
         ],
         answerIndex: 3,
         explanation:
-          'These symptoms are most often caused by something else, but NCI advises seeing a doctor if they last more than a few weeks so any problem can be found early.',
+          "These symptoms are most often caused by something else, but NCI advises seeing a doctor if they last more than a few weeks so any problem can be found early. Bleeding you can't explain should be checked right away.",
       },
       {
         question: 'Which of these is a real trade-off of cancer screening?',
         options: [
-          'A false-positive result can lead to extra tests and worry',
+          'A false positive can lead to more tests',
           'Screening tests cause most cancers',
           'Screening only helps after symptoms start',
           'Screening results are always 100% accurate',
@@ -1117,14 +1287,14 @@ export const lessons: Lesson[] = [
         url: 'https://www.uspreventiveservicestaskforce.org/uspstf/recommendation-topics/uspstf-a-and-b-recommendations',
       },
       {
-        title: 'Colorectal Cancer: Screening',
-        publisher: 'US Preventive Services Task Force',
-        url: 'https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening',
+        title: 'Black or tarry stools',
+        publisher: 'NIH MedlinePlus Medical Encyclopedia',
+        url: 'https://medlineplus.gov/ency/article/003130.htm',
       },
       {
-        title: 'Preventive care benefits for adults',
-        publisher: 'HealthCare.gov',
-        url: 'https://www.healthcare.gov/preventive-care-adults/',
+        title: 'FAQs About Affordable Care Act Implementation Part 51',
+        publisher: 'US Department of Labor',
+        url: 'https://www.dol.gov/sites/dolgov/files/EBSA/about-ebsa/our-activities/resource-center/faqs/aca-part-51.pdf',
       },
     ],
     askBrianPrompts: [
@@ -1132,6 +1302,6 @@ export const lessons: Lesson[] = [
       'What is the difference between a colonoscopy and a home stool test?',
       'Should my family history change when I start screening?',
     ],
-    tags: ['cancer', 'warning signs', 'screening', 'mammogram', 'colonoscopy', 'pap test', 'lung cancer', 'PSA', 'early detection', 'lump'],
+    tags: ['cancer', 'warning signs', 'screening', 'mammogram', 'colonoscopy', 'pap test', 'lung cancer', 'PSA', 'early detection', 'lump', 'blood in stool'],
   },
 ];

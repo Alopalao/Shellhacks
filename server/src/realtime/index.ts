@@ -2,10 +2,10 @@
 // implementation REST handlers use to push events.
 import { Server, type Socket } from 'socket.io';
 import { z } from 'zod';
-import { userForToken, parseBearer } from '../auth/sessions';
+import { findSession, parseBearer, touchSession, userForToken } from '../auth/sessions';
 import type { Db, Realtime } from '../context';
 import { areCounterparts, counterpartIds, findUser, resolveThreadAccess } from '../db/queries';
-import type { ClientToServerEvents, Presence, ServerToClientEvents } from '../shared/contracts';
+import type { ClientToServerEvents, LiveNotification, Presence, ServerToClientEvents } from '../shared/contracts';
 import { PresenceTracker } from './presence';
 
 export interface SocketData {
@@ -23,8 +23,18 @@ export interface RealtimeServer extends Realtime {
   presenceOf(userId: string): Presence;
   /** Push a user's presence to their counterparts (e.g. after a doctor change). */
   broadcastPresence(userId: string): void;
-  /** Disconnect sockets whose session no longer exists (after logout / demo reset). */
+  /** True while some socket is connected with this session token. */
+  hasLiveSocket(token: string): boolean;
+  /** Disconnect sockets whose session no longer exists (after logout / session eviction). */
   disconnectInvalidSessions(): void;
+  /**
+   * Make every client resync after the data changed underneath it (demo reset). Each socket
+   * whose session survived gets `notice` (skipping `quietToken`, the device that asked, which
+   * confirms on its own), then every socket is disconnected. The app reconnects after an
+   * "io server disconnect" and refetches its screens on reconnect; sockets whose session is
+   * gone fail the handshake and sign out.
+   */
+  resyncAll(notice: LiveNotification, quietToken?: string): void;
   close(): Promise<void>;
 }
 
@@ -90,11 +100,13 @@ export function createRealtime(db: Db, options: CreateRealtimeOptions = {}): Rea
 
   io.use((socket, next) => {
     const token = handshakeToken(socket);
-    const user = userForToken(db, token);
-    if (!token || !user) {
+    const session = token ? findSession(db, token) : undefined;
+    const user = session && findUser(db.data, session.userId);
+    if (!token || !session || !user) {
       next(new Error('unauthorized'));
       return;
     }
+    touchSession(db, session);
     socket.data.userId = user.id;
     socket.data.token = token;
     next();
@@ -130,6 +142,9 @@ export function createRealtime(db: Db, options: CreateRealtimeOptions = {}): Rea
 
     socket.on('disconnect', () => {
       if (presence.disconnect(userId, socket.id)) broadcastPresence(userId);
+      // The app was in use until now; keeps this device from being first in line for eviction.
+      const session = findSession(db, socket.data.token);
+      if (session) touchSession(db, session);
     });
   });
 
@@ -139,9 +154,20 @@ export function createRealtime(db: Db, options: CreateRealtimeOptions = {}): Rea
     isOnline: (userId) => presence.isOnline(userId),
     presenceOf: (userId) => presence.get(userId),
     broadcastPresence,
+    hasLiveSocket: (token) => {
+      for (const socket of io.sockets.sockets.values()) if (socket.data.token === token) return true;
+      return false;
+    },
     disconnectInvalidSessions: () => {
       for (const socket of io.sockets.sockets.values()) {
         if (!userForToken(db, socket.data.token)) socket.disconnect(true);
+      }
+    },
+    resyncAll: (notice, quietToken) => {
+      for (const socket of io.sockets.sockets.values()) {
+        const signedIn = !!userForToken(db, socket.data.token);
+        if (signedIn && socket.data.token !== quietToken) socket.emit('notify', notice);
+        socket.disconnect(!signedIn);
       }
     },
     close: async () => {

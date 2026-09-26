@@ -12,6 +12,8 @@ const EUTILS = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils';
 
 export const REVIEW_FILTER =
   '(review[pt] OR systematic[sb] OR meta-analysis[pt] OR guideline[pt] OR practice guideline[pt])';
+/** Leaves out animal-only research (a veterinary CKD guideline is no answer for a person). */
+export const HUMANS_FILTER = 'NOT (animals[mh] NOT humans[mh])';
 
 export class PubMedClient {
   constructor(
@@ -69,10 +71,10 @@ export class PubMedClient {
       for (const id of list) if (!ids.includes(id) && ids.length < max) ids.push(id);
     };
     if (options.preferReviews !== false) {
-      add(await this.esearch(`(${base}) AND ${REVIEW_FILTER} AND english[la] AND hasabstract AND 2005:3000[dp]`, max));
+      add(await this.esearch(`(${base}) AND ${REVIEW_FILTER} AND english[la] AND hasabstract AND 2005:3000[dp] ${HUMANS_FILTER}`, max));
     }
     if (ids.length < max) {
-      add(await this.esearch(`(${base}) AND english[la] AND hasabstract`, max));
+      add(await this.esearch(`(${base}) AND english[la] AND hasabstract ${HUMANS_FILTER}`, max));
     }
     return this.efetch(ids);
   }
@@ -144,16 +146,33 @@ export function evidenceType(article: PubMedArticle): string | null {
   return null;
 }
 
+/** A leading connective that only makes sense after the previous sentence ("As a consequence, …"). */
+const CONNECTIVE =
+  /^(in the meantime|meanwhile|as a (consequence|result)|consequently|therefore|thus|hence|however|moreover|furthermore|in addition|additionally|also|finally|in contrast|similarly|likewise|accordingly|nevertheless|nonetheless|in summary|in conclusion|overall|taken together|to conclude|in short|importantly|notably)\s*,?\s+/i;
+/** Sentences that point back at earlier ones ("These findings, together with…"). */
+const REFERENTIAL = /^(these|this|such|those|it|they|its|their|both|the latter|the former)\b/i;
+
+const dropConnective = (sentence: string): string => {
+  const rest = sentence.replace(CONNECTIVE, '');
+  return rest === sentence ? sentence : rest.charAt(0).toUpperCase() + rest.slice(1);
+};
+
 /**
  * The article's key finding: the labelled conclusion when present, otherwise the closing
- * sentences of the abstract (where unstructured abstracts usually state their conclusion).
+ * sentences of the abstract (where unstructured abstracts usually state their conclusion) —
+ * without a dangling "As a consequence," and never starting on "These findings…".
  */
 export function keyFinding(article: PubMedArticle, maxChars = 320): string | null {
-  if (article.conclusion) return takeSentences(article.conclusion, maxChars, 3);
-  const sentences = splitSentences(article.abstract.replace(/^[A-Z][A-Za-z ]{2,30}:\s/, ''));
+  if (article.conclusion) return takeSentences(dropConnective(article.conclusion), maxChars, 3);
+  const sentences = splitSentences(article.abstract.replace(/^[A-Z][A-Za-z ]{2,30}:\s/, '')).map(dropConnective);
   if (sentences.length === 0) return null;
   if (sentences.length <= 3) return takeSentences(sentences.join(' '), maxChars, 3);
-  return takeSentences(sentences.slice(-2).join(' '), maxChars, 2);
+  let closing = sentences.slice(-2);
+  while (closing.length > 0 && REFERENTIAL.test(closing[0]!)) closing = closing.slice(1);
+  if (closing.length > 0) return takeSentences(closing.join(' '), maxChars, 2);
+  // The closing sentences lean on earlier ones: the opening sentence stands on its own.
+  const opening = sentences.find((s) => !REFERENTIAL.test(s));
+  return opening ? takeSentences(opening, maxChars, 1) : null;
 }
 
 export function pubmedCitation(article: PubMedArticle): CitationDraft {

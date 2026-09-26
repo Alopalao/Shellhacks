@@ -34,9 +34,29 @@ export function purposeLabel(purpose: string | null | undefined): string | null 
   return `For ${rest}`;
 }
 
-/** "2 refills left" / "No refills left". */
-export function refillsLabel(count: number): string {
-  return count > 0 ? `${pluralize(count, 'refill')} left` : 'No refills left';
+/** How long a prescription written with 0 refills counts as "just prescribed" rather than "out of refills". */
+export const NEW_PRESCRIPTION_DAYS = 7;
+
+/**
+ * Where a prescription stands on refills:
+ * - `available`: refills remain;
+ * - `first-fill`: written in the last week with no refills, so the patient is still on (or hasn't
+ *   picked up) the first fill; nothing to warn about yet;
+ * - `out`: no refills left, time to ask the doctor to renew it.
+ */
+export type RefillState = 'available' | 'first-fill' | 'out';
+
+export function refillState(rx: Pick<Prescription, 'refillsRemaining' | 'createdAt'>, now: Date = new Date()): RefillState {
+  if (rx.refillsRemaining > 0) return 'available';
+  const created = Date.parse(rx.createdAt);
+  const ageMs = now.getTime() - created;
+  return Number.isFinite(created) && ageMs < NEW_PRESCRIPTION_DAYS * 86_400_000 ? 'first-fill' : 'out';
+}
+
+/** "2 refills left" / "No refills left", or "No refills included" for a just-written prescription. */
+export function refillsLabel(count: number, state?: RefillState): string {
+  if (count > 0) return `${pluralize(count, 'refill')} left`;
+  return state === 'first-fill' ? 'No refills included' : 'No refills left';
 }
 
 export function formLabel(form: string): string {

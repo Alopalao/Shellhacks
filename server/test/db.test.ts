@@ -7,7 +7,7 @@ import { createSeedData, DEMO_IDS } from '../src/db/seed';
 import { JsonDb } from '../src/db/store';
 import { computeAdherence } from '../src/routes/adherence';
 import { addDays, toDateKey, toTimeKey } from '../src/db/dates';
-import { login, startTestServer } from './helpers';
+import { connectSocket, login, startTestServer, uniqueEmail, type RecordingClient } from './helpers';
 
 let dir: string;
 let file: string;
@@ -143,6 +143,38 @@ describe('POST /api/admin/reset', () => {
       await server.http.get('/api/me').set(temp.auth).expect(401);
       await server.http.post('/api/admin/reset').expect(401);
     } finally {
+      await server.stop();
+    }
+  });
+
+  it('tells the other devices and makes every client reconnect to refetch', async () => {
+    const server = await startTestServer();
+    const clients: RecordingClient[] = [];
+    try {
+      const maya = await login(server, 'patient@brian.demo');
+      const reyes = await login(server, 'doctor@brian.demo');
+      const temp = await login(server, uniqueEmail('temp'));
+      clients.push(...(await Promise.all([maya, reyes, temp].map((s) => connectSocket(server, s.token)))));
+      const [mayaSocket, reyesSocket, tempSocket] = clients as [RecordingClient, RecordingClient, RecordingClient];
+      const closed = clients.map((c) => new Promise<string>((resolve) => c.socket.once('disconnect', resolve)));
+
+      await server.http.post('/api/admin/reset').set(maya.auth).expect(200, { ok: true });
+      const [mayaReason, reyesReason] = await Promise.all(closed);
+      // The app reconnects after a server-side disconnect, which refetches its screens.
+      expect(mayaReason).toBe('io server disconnect');
+      expect(reyesReason).toBe('io server disconnect');
+
+      const isReset = (n: { title: string }): boolean => n.title === 'Demo data was reset';
+      expect(reyesSocket.received('notify', isReset)).toEqual([
+        expect.objectContaining({ kind: 'system', body: 'Maya Johnson restored the original demo data.' }),
+      ]);
+      expect(mayaSocket.received('notify', isReset)).toEqual([]); // the requester confirms on its own
+      expect(tempSocket.received('notify', isReset)).toEqual([]); // that account no longer exists
+
+      clients.push(await connectSocket(server, reyes.token));
+      await expect(connectSocket(server, temp.token)).rejects.toThrow('unauthorized');
+    } finally {
+      for (const client of clients) client.close();
       await server.stop();
     }
   });

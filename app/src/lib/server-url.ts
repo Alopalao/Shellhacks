@@ -1,6 +1,8 @@
 // Resolves the BRIAN server base URL (no trailing slash, no `/api`).
-// Priority: saved override (AsyncStorage) → EXPO_PUBLIC_API_URL → web page host:4000
-// → Expo dev-server host (phones on the same Wi-Fi):4000 → http://localhost:4000.
+// Priority: saved override (AsyncStorage) → EXPO_PUBLIC_API_URL → web page host:<port>
+// → Expo dev-server host (phones on the same Wi-Fi):<port> → http://localhost:<port>,
+// where <port> is EXPO_PUBLIC_API_PORT or 4000. Under `expo start --tunnel` the dev-server host is a
+// public tunnel that only carries the app bundle, so the user is asked for the server's address.
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import { useSyncExternalStore } from 'react';
@@ -10,8 +12,22 @@ import { getString, removeItem, setString, storageKeys } from './storage';
 /** Port the BRIAN server listens on by default. */
 export const DEFAULT_SERVER_PORT = 4000;
 
-/** Where the current URL came from (shown in settings). */
-export type ServerUrlSource = 'saved' | 'env' | 'web-host' | 'expo-host' | 'default';
+function parsePort(value: string | undefined): number | null {
+  const port = Number(value);
+  return Number.isInteger(port) && port > 0 && port < 65536 ? port : null;
+}
+
+/**
+ * Port used for auto-detected server URLs: `EXPO_PUBLIC_API_PORT` (set it in app/.env when the
+ * server runs with a different PORT) or 4000.
+ */
+export const SERVER_PORT = parsePort(process.env.EXPO_PUBLIC_API_PORT) ?? DEFAULT_SERVER_PORT;
+
+/**
+ * Where the current URL came from (shown in settings). `tunnel`: the app was loaded through
+ * `expo start --tunnel`, which can't reach the server — the user must enter its public address.
+ */
+export type ServerUrlSource = 'saved' | 'env' | 'web-host' | 'expo-host' | 'tunnel' | 'default';
 
 export interface ServerUrlState {
   /** The URL every request/socket uses right now. */
@@ -42,9 +58,21 @@ export function normalizeServerUrl(input: string | null | undefined): string | n
 
 function hostFromHostUri(hostUri: string | undefined | null): string | null {
   if (!hostUri) return null;
-  const withoutScheme = hostUri.replace(/^[a-z]+:\/\//i, '');
-  const host = withoutScheme.split('/')[0]?.split(':')[0];
+  const authority = hostUri.replace(/^[a-z]+:\/\//i, '').split('/')[0] ?? '';
+  // Bracketed IPv6 literal ("[fe80::1]:8081") keeps its brackets; otherwise drop the port.
+  const host = authority.startsWith('[') ? authority.slice(0, authority.indexOf(']') + 1) : authority.split(':')[0];
   return host ? host : null;
+}
+
+/**
+ * True when a phone can reach `host` directly on the local network: IP literals, single-label
+ * names ("my-laptop") and local DNS suffixes. Other names are public DNS — in practice the
+ * `expo start --tunnel` host (e.g. *.exp.direct), which only forwards the Metro bundler.
+ */
+function isLocalNetworkHost(host: string): boolean {
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.startsWith('[')) return true;
+  if (!host.includes('.')) return true;
+  return /\.(local|lan|home|internal|localdomain|home\.arpa)$/i.test(host);
 }
 
 function detect(): { url: string; source: ServerUrlSource } {
@@ -54,9 +82,9 @@ function detect(): { url: string; source: ServerUrlSource } {
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined' && window.location?.hostname) {
       const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
-      return { url: `${protocol}//${window.location.hostname}:${DEFAULT_SERVER_PORT}`, source: 'web-host' };
+      return { url: `${protocol}//${window.location.hostname}:${SERVER_PORT}`, source: 'web-host' };
     }
-    return { url: `http://localhost:${DEFAULT_SERVER_PORT}`, source: 'default' };
+    return { url: `http://localhost:${SERVER_PORT}`, source: 'default' };
   }
 
   const host =
@@ -64,13 +92,16 @@ function detect(): { url: string; source: ServerUrlSource } {
     hostFromHostUri(Constants.expoGoConfig?.debuggerHost) ??
     hostFromHostUri(Constants.linkingUri);
   if (host && host !== 'localhost' && host !== '127.0.0.1') {
-    return { url: `http://${host}:${DEFAULT_SERVER_PORT}`, source: 'expo-host' };
+    if (isLocalNetworkHost(host)) return { url: `http://${host}:${SERVER_PORT}`, source: 'expo-host' };
+    // Tunnel: <tunnel-host>:<port> never answers. Fall back to a URL that fails fast; the login
+    // screen and settings ask for the server's public address instead.
+    return { url: `http://localhost:${SERVER_PORT}`, source: 'tunnel' };
   }
   // Android emulators reach the host machine at 10.0.2.2.
   if (Platform.OS === 'android' && !Device.isDevice) {
-    return { url: `http://10.0.2.2:${DEFAULT_SERVER_PORT}`, source: 'default' };
+    return { url: `http://10.0.2.2:${SERVER_PORT}`, source: 'default' };
   }
-  return { url: `http://localhost:${DEFAULT_SERVER_PORT}`, source: 'default' };
+  return { url: `http://localhost:${SERVER_PORT}`, source: 'default' };
 }
 
 const detected = detect();

@@ -82,6 +82,8 @@ export function useApiQuery<T>(
   const mounted = useRef(true);
   const lastFetchAt = useRef(0);
   const hasFetched = useRef(false);
+  /** True while the latest settled fetch failed (drives the reconnect refetch below). */
+  const lastFailed = useRef(false);
 
   useEffect(() => {
     mounted.current = true;
@@ -98,11 +100,13 @@ export function useApiQuery<T>(
     try {
       const result = await latest.current.fetcher();
       if (!mounted.current || id !== requestId.current) return;
+      lastFailed.current = false;
       setData(result);
       setError(null);
       latest.current.onSuccess?.(result);
     } catch (e) {
       if (!mounted.current || id !== requestId.current) return;
+      lastFailed.current = true;
       setError(e);
     } finally {
       if (mounted.current) {
@@ -138,13 +142,16 @@ export function useApiQuery<T>(
     }, [run]),
   );
 
-  // Silent refetch after a socket reconnect (not on the very first connect).
+  // Silent refetch after a socket reconnect. The very first connect is skipped (the initial load
+  // covers it) unless that load failed — e.g. the screen opened while the server was down — so the
+  // screen recovers on its own once the server is back.
   const { connectCount } = useSocket();
   const seenConnectCount = useRef(connectCount);
   useEffect(() => {
     const changed = connectCount !== seenConnectCount.current;
     seenConnectCount.current = connectCount;
-    if (!changed || connectCount <= 1) return;
+    if (!changed || connectCount < 1) return;
+    if (connectCount === 1 && !lastFailed.current) return;
     if (latest.current.refetchOnReconnect && latest.current.enabled && hasFetched.current) void run('silent');
   }, [connectCount, run]);
 

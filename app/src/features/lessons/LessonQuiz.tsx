@@ -219,6 +219,7 @@ function QuizOption({ letter, label, state, disabled, onPress }: QuizOptionProps
       accessibilityRole="radio"
       accessibilityLabel={`${letter}. ${label}${look.suffix}`}
       accessibilityState={{ checked: chosen, disabled }}
+      aria-checked={chosen}
       style={({ pressed }) => [
         styles.option,
         { backgroundColor: look.bg, borderColor: look.border },

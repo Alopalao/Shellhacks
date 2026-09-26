@@ -30,9 +30,11 @@ import {
   FREQUENCY_PRESETS,
   goBackOr,
   initialFormValues,
+  isPatientUnavailable,
   MAX_REFILLS,
   medLabel,
   paramValue,
+  PatientUnavailable,
   ROUTES,
   serverFieldErrors,
   Stepper,
@@ -80,6 +82,13 @@ function PrescribeLoader({ patientId, rxId }: { patientId: string; rxId?: string
     return (
       <Screen header={<ScreenHeader title={rxId ? 'Edit prescription' : 'New prescription'} back={back} />} scroll={false}>
         <LoadingState label="Loading patient…" />
+      </Screen>
+    );
+  }
+  if (!q.data && isPatientUnavailable(q.error)) {
+    return (
+      <Screen header={<ScreenHeader title="Prescription" back={doctorHrefs.patients} />}>
+        <PatientUnavailable error={q.error} />
       </Screen>
     );
   }

@@ -48,6 +48,8 @@ export function SegmentedControl<T extends string>({
             accessibilityRole="radio"
             accessibilityLabel={opt.accessibilityLabel ?? opt.label}
             accessibilityState={{ checked: selected, selected, disabled: !!disabled }}
+            // react-native-web ignores accessibilityState; aria-checked reaches the DOM (and native).
+            aria-checked={selected}
             style={({ pressed }) => [
               styles.segment,
               { minHeight: size === 'sm' ? 36 : 44 },

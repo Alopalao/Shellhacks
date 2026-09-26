@@ -22,7 +22,10 @@ export interface RefillRequestCardProps {
   onOpenPatient?: () => void;
   /** Called with the server response after approve/deny. */
   onResolved: (result: ResolveRefillResponse) => void;
-  /** Called when the request turned out to be already resolved (409) — reload. */
+  /**
+   * Called when the request turned out to be stale — already resolved (409) or handed to another
+   * physician because the patient switched doctors (403) — reload.
+   */
   onStale?: () => void;
   now?: Date;
 }
@@ -50,8 +53,8 @@ export function RefillRequestCard({
 
   const resolve = useAsyncAction((body: ResolveRefillRequest) => api.resolveRefill(refill.id, body), {
     onError: (e) => {
-      if (isApiRequestError(e) && e.status === 409) {
-        toast.info('Already handled', errorMessage(e));
+      if (isApiRequestError(e) && (e.status === 409 || e.status === 403)) {
+        toast.info(e.status === 409 ? 'Already handled' : 'No longer yours to decide', errorMessage(e));
         onStale?.();
         return;
       }

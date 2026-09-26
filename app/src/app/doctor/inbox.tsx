@@ -1,7 +1,7 @@
 // Doctor inbox: pending refill requests (approve / deny inline), resolved history, and a
 // session-only live activity feed built from socket events.
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   Badge,
@@ -20,20 +20,20 @@ import {
   doctorHrefs,
   medLabel,
   RefillRequestCard,
+  removeById,
   ResolvedRefillRow,
   upsertById,
   useActivityFeed,
-  useActivityRecorder,
   type ActivityDirectory,
 } from '@/features/doctor';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { useNow } from '@/hooks/useInterval';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import type { PatientSummary, Prescription, RefillRequest } from '@/lib/contracts';
 import { pluralize } from '@/lib/format';
 import { useSocket, useSocketEvent } from '@/lib/socket';
-import { setTabBadge } from '@/lib/tab-badges';
 import { spacing } from '@/theme';
 
 const HISTORY_PREVIEW = 5;
@@ -56,7 +56,9 @@ const byResolvedDesc = (a: RefillRequest, b: RefillRequest) =>
   (b.resolvedAt ?? b.createdAt).localeCompare(a.resolvedAt ?? a.createdAt);
 
 export default function DoctorInboxScreen() {
-  useActivityRecorder();
+  // The activity feed and the Inbox tab badge are kept live by the doctor tab layout.
+  const { user } = useAuth();
+  const me = user?.id;
   const now = useNow(30_000);
   const { isWide } = useBreakpoint();
   const { connected } = useSocket();
@@ -70,6 +72,12 @@ export default function DoctorInboxScreen() {
 
   // ── Live updates ──
   useSocketEvent('refill:upsert', (refill) => {
+    // Same scope as GET /api/refills: only requests addressed to me. When a patient switches doctors
+    // their pending requests are handed to the new physician — they're no longer mine to decide.
+    if (refill.doctorId !== me) {
+      q.setData((d) => (d ? { ...d, refills: removeById(d.refills, refill.id) } : d));
+      return;
+    }
     q.setData((d) => (d ? { ...d, refills: upsertById(d.refills, refill) } : d));
     // A request for a patient/prescription we haven't loaded yet → refresh the directory.
     if (data && (!patientsById.has(refill.patientId) || !rxById.has(refill.prescriptionId))) void q.reload();
@@ -77,15 +85,20 @@ export default function DoctorInboxScreen() {
   useSocketEvent('prescription:upsert', (rx) => {
     q.setData((d) => (d ? { ...d, prescriptions: upsertById(d.prescriptions, rx, 'end') } : d));
   });
-  useSocketEvent('user:updated', (user) => {
-    if (user.role !== 'patient') return;
-    if (data && !patientsById.has(user.id)) {
-      void q.reload();
+  useSocketEvent('user:updated', (patient) => {
+    if (patient.role !== 'patient') return;
+    const mine = patient.doctorId === me;
+    if (mine && data && !patientsById.has(patient.id)) {
+      void q.reload(); // a new patient on my list
       return;
     }
-    q.setData((d) =>
-      d ? { ...d, patients: d.patients.map((s) => (s.patient.id === user.id ? { ...s, patient: user } : s)) } : d,
-    );
+    q.setData((d) => {
+      if (!d) return d;
+      const patients = d.patients.map((s) => (s.patient.id === patient.id ? { ...s, patient } : s));
+      if (mine) return { ...d, patients };
+      // Switched to another physician: their pending requests moved with them (my resolved history stays).
+      return { ...d, patients, refills: d.refills.filter((r) => r.patientId !== patient.id || r.status !== 'pending') };
+    });
   });
 
   const pending = useMemo(() => (data?.refills ?? []).filter((r) => r.status === 'pending'), [data?.refills]);
@@ -93,10 +106,6 @@ export default function DoctorInboxScreen() {
     () => (data?.refills ?? []).filter((r) => r.status !== 'pending').sort(byResolvedDesc),
     [data?.refills],
   );
-
-  useEffect(() => {
-    if (data) setTabBadge('doctor/inbox', pending.length);
-  }, [data, pending.length]);
 
   const directory: ActivityDirectory = {
     patientName: (id) => patientsById.get(id)?.name,

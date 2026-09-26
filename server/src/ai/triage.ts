@@ -4,12 +4,17 @@
 // ("no chest pain", "what are the signs of a stroke?", "I had a seizure years ago"), and
 // give concrete, safe next steps. Educational questions get an info-level card instead of
 // an alarm. This is not a diagnostic tool; every message errs toward getting help.
+//
+// Framing is judged per match, not per message: "I had a heart attack 2 years ago and now I
+// have chest pain" is live, and "what should I do?" after a symptom never makes it a lesson.
 
 import type { Triage, TriageAction, TriageLevel } from '../shared/contracts';
 import type { CitationDraft } from '../evidence/types';
+import { DRUGS } from './drugs';
 
 export type TriageCategory =
   | 'suicide'
+  | 'battery'
   | 'overdose'
   | 'stroke'
   | 'heart'
@@ -40,6 +45,7 @@ export const CALL_911: TriageAction = { label: 'Call 911', phone: '911' };
 export const CALL_988: TriageAction = { label: 'Call or text 988', phone: '988' };
 export const CHAT_988: TriageAction = { label: 'Chat with 988 online', url: 'https://988lifeline.org/chat/' };
 export const POISON_HELP: TriageAction = { label: 'Call Poison Help', phone: '1-800-222-1222' };
+export const BATTERY_HOTLINE: TriageAction = { label: 'Battery Ingestion Hotline', phone: '1-800-498-8666' };
 export const FIND_URGENT_CARE: TriageAction = {
   label: 'Find urgent care near me',
   url: 'https://www.google.com/maps/search/urgent+care+near+me',
@@ -106,6 +112,26 @@ export const CATEGORY_INFO: Record<TriageCategory, CategoryInfo> = {
       nih('Suicide Prevention', 'https://www.nimh.nih.gov/health/topics/suicide-prevention', 'National Institute of Mental Health (NIMH)'),
     ],
   },
+  battery: {
+    level: 'emergency',
+    title: 'Swallowed battery — go to the ER now',
+    message:
+      "A swallowed button or coin battery can badly burn the food pipe within hours, even if the person seems fine. Go to the nearest emergency room now — an X-ray is usually needed right away — and call Poison Help (1-800-222-1222) or the National Button Battery Ingestion Hotline (1-800-498-8666) on the way. Call 911 for trouble breathing, drooling, or trouble swallowing.",
+    actions: [CALL_911, POISON_HELP, BATTERY_HOTLINE],
+    steps: [
+      'Go to the nearest **emergency room now**, even if there are no symptoms — a swallowed battery may cause none at first. Call **911** if they have trouble breathing, are drooling, or can’t swallow.',
+      'On the way, call the **National Button Battery Ingestion Hotline at 1-800-498-8666** or **Poison Help at 1-800-222-1222**. Bring the battery package or a matching battery if you can.',
+      "For a child **1 year or older** who can swallow, if it was swallowed in the last 12 hours: the National Capital Poison Center advises **2 teaspoons (10 mL) of honey every 10 minutes** (up to 6 doses) on the way to the ER. Don't delay leaving to do this, and never give honey to a baby under 1.",
+      "Don't make them throw up, and don't give other food or drink until an X-ray shows where the battery is.",
+    ],
+    infoTitle: 'Swallowed battery: go to the ER',
+    also: 'A swallowed button battery needs the ER right away.',
+    topic: 'poisoning',
+    sources: [
+      mp('Button batteries', 'https://medlineplus.gov/ency/article/002764.htm'),
+      mp('Poisoning', 'https://medlineplus.gov/poisoning.html'),
+    ],
+  },
   overdose: {
     level: 'emergency',
     title: 'Possible poisoning or overdose — get help now',
@@ -139,21 +165,24 @@ export const CATEGORY_INFO: Record<TriageCategory, CategoryInfo> = {
       "Stay with the person. Don't give food, drinks or medicine unless the 911 dispatcher tells you to.",
       "If they stop responding and aren't breathing normally, start CPR if you know how — the dispatcher can coach you.",
     ],
+    // Mirrors MedlinePlus's F.A.S.T. test and symptom list (https://medlineplus.gov/stroke.html).
     signs: {
-      heading: 'Stroke warning signs: BE FAST',
+      heading: 'Stroke warning signs: think F.A.S.T.',
       items: [
-        '**B — Balance:** sudden dizziness, loss of balance or trouble walking',
-        '**E — Eyes:** sudden trouble seeing in one or both eyes',
-        '**F — Face:** one side of the face droops or feels numb; the smile looks uneven',
-        '**A — Arms:** one arm (or leg) is weak or numb and drifts down when both are raised',
-        '**S — Speech:** slurred or strange speech, or trouble understanding others',
-        '**T — Time:** call 911 right away, even if the symptoms go away, and note when they started',
+        '**F — Face:** one side of the face droops when smiling',
+        '**A — Arm:** one arm is weak — when both arms are raised, one drifts downward',
+        '**S — Speech:** speech is slurred or strange',
+        '**T — Time:** time to call 911 right away',
+        'Other sudden signs: numbness or weakness of the face, arm or leg (especially on one side), confusion or trouble understanding speech, trouble seeing in one or both eyes, trouble walking or loss of balance, or a severe headache with no known cause',
       ],
     },
-    infoTitle: 'Know the signs of a stroke: BE FAST',
+    infoTitle: 'Know the signs of a stroke: think F.A.S.T.',
     also: 'Sudden face drooping, arm weakness or trouble speaking means call 911.',
     topic: 'stroke',
-    sources: [mp('Stroke', 'https://medlineplus.gov/stroke.html')],
+    sources: [
+      mp('Stroke', 'https://medlineplus.gov/stroke.html'),
+      mp('Transient Ischemic Attack', 'https://medlineplus.gov/transientischemicattack.html'),
+    ],
   },
   heart: {
     level: 'emergency',
@@ -167,14 +196,15 @@ export const CATEGORY_INFO: Record<TriageCategory, CategoryInfo> = {
       'If you have chest pain medicine prescribed for a known heart condition (such as nitroglycerin), take it as directed. Only take aspirin if a doctor or the 911 dispatcher tells you to.',
       "If the person stops responding and isn't breathing normally, start CPR and use an AED if one is nearby.",
     ],
+    // Mirrors MedlinePlus's symptom list (https://medlineplus.gov/heartattack.html).
     signs: {
       heading: 'Heart attack warning signs',
       items: [
-        'Chest pain, pressure, squeezing or fullness that lasts more than a few minutes or goes away and comes back',
-        'Pain or discomfort in one or both arms, the back, neck, jaw or upper belly',
+        'Chest discomfort — pressure, squeezing, fullness or pain, often in the center or left side of the chest — that lasts more than a few minutes, or goes away and comes back',
+        'Pain or discomfort in one or both arms, the back, shoulders, neck, jaw or upper stomach',
         'Shortness of breath, with or without chest discomfort',
-        'Cold sweat, nausea or light-headedness',
-        'Women are more likely than men to have shortness of breath, nausea, and back or jaw pain',
+        'Nausea, vomiting, dizziness or light-headedness, a racing or pounding heart, or a cold sweat',
+        'Women sometimes have different symptoms than men — for example, they are more likely to feel tired for no reason',
       ],
     },
     infoTitle: 'Know the signs of a heart attack',
@@ -283,8 +313,8 @@ export const CATEGORY_INFO: Record<TriageCategory, CategoryInfo> = {
     actions: [CALL_911],
     steps: [
       'Call **911**.',
-      'Press firmly on the wound with a clean cloth or bandage and keep pressing. If blood soaks through, add more cloth on top — don’t remove the first layer.',
-      'If you can, raise the injured area above the level of the heart.',
+      'If the blood is coming from a wound, press firmly on it with a clean cloth or bandage and keep pressing. If blood soaks through, add more cloth on top — don’t remove the first layer.',
+      'If an arm or leg is injured, raise it above the level of the heart if you can.',
       "If someone is vomiting or coughing up blood, don't give food or drink; keep them sitting up or on their side.",
     ],
     infoTitle: 'How to handle serious bleeding',
@@ -346,7 +376,7 @@ export const CATEGORY_INFO: Record<TriageCategory, CategoryInfo> = {
     message:
       'An infection with confusion, very fast breathing, a racing heart, clammy or blotchy skin, severe pain, or feeling extremely ill can be sepsis. Call 911 or go to the ER now and tell them about the infection.',
     actions: [CALL_911],
-    steps: ['Call **911** or go to the emergency room now.', 'Tell the team about the infection and ask, "Could this be sepsis?"'],
+    steps: ['Call **911** or go to the emergency room now.', 'Tell the team about the infection and ask, "Could this infection be leading to sepsis?"'],
     infoTitle: 'Warning signs of sepsis',
     also: 'An infection with confusion or a racing heart can be sepsis — go to the ER.',
     topic: 'sepsis',
@@ -582,6 +612,21 @@ export const CATEGORY_INFO: Record<TriageCategory, CategoryInfo> = {
 
 // ── Text normalization & clause handling ─────────────────────────────────────
 
+/**
+ * Clinician shorthand that patients type ("CP and SOB", "my friend ODd"), expanded while
+ * letter case still tells "SOB" / "OD" apart from ordinary words. A bare "OD" is left alone
+ * (it also means "right eye" on eye-drop directions).
+ */
+function expandShorthand(message: string): string {
+  return message
+    .replace(/\bCP\b/g, 'chest pain')
+    .replace(/\bSOB\b/g, 'shortness of breath')
+    .replace(/\bDOE\b/g, 'shortness of breath with activity')
+    .replace(/\bOD(?:'?e?d)\b/g, 'overdosed')
+    .replace(/\bOD'?ing\b/g, 'overdosing')
+    .replace(/\b(an|the|to) OD\b|\bOD (?=on\b)/g, (match) => match.replace('OD', 'overdose'));
+}
+
 export function normalizeForTriage(text: string): string {
   return ` ${text} `
     .toLowerCase()
@@ -605,12 +650,37 @@ export function normalizeForTriage(text: string): string {
     .replace(/\s+/g, ' ');
 }
 
-/** Clauses: sentence punctuation, commas, and contrastive conjunctions start a new clause. */
-function splitClauses(text: string): string[] {
-  return text
-    .split(/[.!?;\n]+|,|\b(?:but|however|although|though|except|yet|whereas)\b/)
-    .map((c) => c.trim())
-    .filter(Boolean);
+interface Clause {
+  text: string;
+  /** The whole clause continues a negated list: "denies chest pain, shortness of breath". */
+  negatedList: boolean;
+}
+
+/** Sentence punctuation, commas, and contrastive conjunctions start a new clause. */
+const CLAUSE_BREAK = /[.!?;\n]+|,|\b(?:but|however|although|though|except|yet|whereas)\b/g;
+/** A clause that opens a negated list ("no fever", "pt denies chest pain"). */
+const LIST_LEAD = /^(?:(?:pt|patient) )?(?:no|denies|denied|negative for|without|free of)\b/;
+const VERBISH = /\b(is|are|was|were|am|has|have|had|feel\w*|hurt\w*|keeps?|started|getting|got|'s|'m|'re)\b/;
+
+function splitClauses(text: string): Clause[] {
+  const out: Clause[] = [];
+  let start = 0;
+  let afterComma = false;
+  const push = (end: number) => {
+    const piece = text.slice(start, end).trim();
+    if (!piece) return;
+    const prev = out[out.length - 1];
+    const prevOpensList = prev ? LIST_LEAD.test(prev.text) || prev.negatedList : false;
+    const bareNounPhrase = piece.split(/\s+/).length <= 4 && !VERBISH.test(piece) && !PERSONAL_SUBJECT.test(piece);
+    out.push({ text: piece, negatedList: afterComma && prevOpensList && bareNounPhrase });
+  };
+  for (const m of text.matchAll(CLAUSE_BREAK)) {
+    push(m.index);
+    afterComma = m[0] === ',';
+    start = m.index + m[0].length;
+  }
+  push(text.length);
+  return out;
 }
 
 const NEGATION = /\b(no|not|never|without|denies|denied|deny|none|nor|isn't|aren't|wasn't|weren't|don't|doesn't|didn't|haven't|hasn't|hadn't|no longer|free of|negative for)\b/g;
@@ -635,64 +705,143 @@ function isNegated(clause: string, index: number): boolean {
   return false;
 }
 
+/** True when the phrase at `index` of raw `text` is negated in its clause ("No chest pain today"). */
+export function isNegatedInText(text: string, index: number): boolean {
+  const lower = text.toLowerCase().replace(/[’‘`´]/g, "'");
+  let start = 0;
+  for (const m of lower.slice(0, index).matchAll(CLAUSE_BREAK)) start = m.index + m[0].length;
+  return isNegated(lower.slice(start), index - start);
+}
+
 interface Hit {
   category: TriageCategory;
+  /** The matched text. */
+  match: string;
   clause: string;
+  /** Position of the clause in the message (-1 for message-level readings). */
+  clauseIndex: number;
   index: number;
+  /** A first-person statement of self-harm intent: question framing never softens it. */
+  strong?: boolean;
 }
 
-/** First non-negated match of any pattern, searched clause by clause. */
-function findHit(clauses: string[], patterns: RegExp[], category: TriageCategory): Hit | null {
-  for (const clause of clauses) {
+type Accept = (clause: string, match: RegExpExecArray) => boolean;
+
+/** Every non-negated match of any pattern, clause by clause. */
+function findHits(clauses: Clause[], patterns: RegExp[], category: TriageCategory, accept?: Accept): Hit[] {
+  const hits: Hit[] = [];
+  clauses.forEach((clause, clauseIndex) => {
+    if (clause.negatedList) return;
     for (const pattern of patterns) {
       const re = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`);
-      for (let m = re.exec(clause); m; m = re.exec(clause)) {
-        if (!isNegated(clause, m.index)) return { category, clause, index: m.index };
+      for (let m = re.exec(clause.text); m; m = re.exec(clause.text)) {
         if (m[0].length === 0) re.lastIndex++;
+        if (isNegated(clause.text, m.index) || (accept && !accept(clause.text, m))) continue;
+        hits.push({ category, match: m[0], clause: clause.text, clauseIndex, index: m.index });
       }
     }
-  }
-  return null;
+  });
+  return hits;
 }
 
-function hasAny(clauses: string[], patterns: RegExp[]): boolean {
-  return findHit(clauses, patterns, 'stroke') !== null;
+function hasAny(clauses: Clause[], patterns: RegExp[]): boolean {
+  return findHits(clauses, patterns, 'stroke').length > 0;
 }
+
+/** A message-level reading (BP, temperature, glucose) anchored to the clause that mentions it. */
+function readingHit(clauses: Clause[], category: TriageCategory, anchor: RegExp): Hit {
+  for (const [clauseIndex, clause] of clauses.entries()) {
+    const m = anchor.exec(clause.text);
+    if (m) return { category, match: m[0], clause: clause.text, clauseIndex, index: m.index };
+  }
+  return { category, match: '', clause: clauses[0]?.text ?? '', clauseIndex: 0, index: 0 };
+}
+
+const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // ── Patterns ─────────────────────────────────────────────────────────────────
 
+const PILL_WORDS =
+  "pills?|tablets?|tabs|caps|capsules?|gummies|vitamins|meds|medicines?|medications?|painkillers?|sleeping pills|sleep aids?|doses";
+/** Every known medicine name, brand and alias (longest first), for "took 20 Tylenol". */
+const DRUG_NAMES = [...new Set(DRUGS.flatMap((d) => [d.name, ...d.brands, ...(d.aliases ?? [])]).map((n) => n.toLowerCase()))]
+  .filter((n) => n.length >= 4)
+  .sort((a, b) => b.length - a.length)
+  .map(escapeRegex)
+  .join('|');
+const COUNT_WORDS: Record<string, number> = {
+  three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
+  thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
+  twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, 'a dozen': 12, 'a couple dozen': 24, dozens: 24,
+  'a hundred': 100, hundreds: 200,
+};
+const NOT_A_PILL_COUNT =
+  'mg|mcg|milligrams?|micrograms?|g|grams?|ml|milliliters?|cc|units?|iu|%|minutes?|mins?|hours?|hrs?|days?|weeks?|months?|years?|yrs?|am|pm|times?|x|puffs?|drops?';
+/** "took 20 Tylenol", "my son swallowed 15 of my ibuprofen", "she took 40 of her Xanax". */
+const COUNT_TAKEN = new RegExp(
+  `\\b(?:took|taken|swallowed|ate|eaten|popped|downed|chewed|gave (?:him|her|them))\\s+` +
+    `(?:like |about |around |maybe |over |almost |nearly |at least |more than |probably )?` +
+    `(\\d{1,3}|${Object.keys(COUNT_WORDS).join('|')})(?!\\s*(?:${NOT_A_PILL_COUNT})\\b)\\s+` +
+    `(?:of\\s+)?(?:(?:my|his|her|their|the|our|these|those|[a-z]+'s)\\s+)?` +
+    `(?:(?!different\\b|kinds?\\b|types?\\b|brands?\\b|sorts?\\b)[\\w'-]+\\s+){0,2}?` +
+    `(?:${PILL_WORDS}|${DRUG_NAMES})\\b`,
+  'g',
+);
+const CHILD_SUBJECT =
+  /\b(son|daughter|toddler|baby|infant|kid|kids|child|children|grandson|granddaughter|\d+[- ](?:year|yr|month)s?[- ]old|\d+ ?(?:y\/?o|yo))\b/;
+const BATTERY = /\bbatter(?:y|ies)\b|\b(?:button|coin) cells?\b/;
+/** "took all my morning pills" is a routine, not an overdose. */
+const ROUTINE_DOSE =
+  /^took all (?:of )?(?:my |the |his |her )?(?:morning|evening|night|nighttime|bedtime|daily|usual|regular|today's|scheduled|prescribed)\b|\b(this morning|today|on time|as (prescribed|directed)|at (breakfast|lunch|dinner|bedtime)|with (breakfast|dinner|food|meals)|like (i'm|i am) supposed to)\b/;
+const USUAL_SCHEDULE = /\btwice (a|per|each|every) (day|week)\b|\b(two|2) (times|doses) (a|per|each) day\b/;
+
 const P = {
-  suicide: [
-    /\b(kill|killing|hurt|hurting|harm|harming|cut|cutting|end) (my|him|her|them)sel(f|ves)\b/,
-    /\bsuicid\w*/,
+  /** First-person / intent statements: framing as a question never softens these. */
+  suicideSelf: [
+    /\b(kill|killing|hurt|hurting|harm|harming|end|shoot|shooting|hang|hanging|stab|stabbing|drown|drowning|poison|poisoning|starve|starving) (my|him|her|them)sel(f|ves)\b/,
+    /\b(cut|cutting) (my|him|her|them)sel(f|ves)\b(?! (shaving|cooking|chopping|slicing|on |while|by accident|accidentally|in the kitchen|at work))/,
     /\b(end|ending|take|taking) (my|his|her|their) (own )?life\b/,
     /\bend it all\b/,
-    /\b(want|wanna|wanted|wish|going|ready) (to )?die\b/,
+    /\b(want|wanna|wanted|wish|going|ready|plan|planning) (to )?die\b/,
     /\bwish (i|he|she) (was|were) dead\b/,
     /\bbetter off (dead|without me)\b/,
     /\bno (reason|point) (to|in) (live|living|going on)\b/,
+    /\b(life|living) (is|isn't|is not) (not )?worth (it|living)\b/,
     /\bdon't want to (live|be alive|be here anymore|wake up)\b/,
-    /\bself[- ]?harm\w*/,
     /\bon purpose\b.*\b(overdose|pills)\b|\b(overdose|pills)\b.*\bon purpose\b/,
+    /\b(going|gonna|planning|plan|want|wanna|ready|about) to (take|swallow) (all|every one|the rest) (of )?(my|the|his|her|these|those)( \w+)? (pills|meds|medicines?|medications?|tablets|capsules)\b(?! (at the same time|together|in the morning|with (food|breakfast|dinner|meals|water)|at (breakfast|lunch|dinner|bedtime)))/,
+    /\b(saving|stockpiling|hoarding|collecting|stashing) (up )?(all )?(of )?(my |the |his |her )?(sleeping )?(pills|meds|medicines?|medications?|tablets)\b/,
+    /\bending (it|things|everything|it all)\b(?! with\b)/,
+    /\bend (things|everything)\b(?! with\b)/,
+    /\b(want|wanna|wish|hope|hoping|pray|praying)\b[^.]{0,30}\bnever wake up\b/,
+    /\b(gun|firearm|pistol|rifle|rope|noose|knife|blade|razor)\b[^.]{0,50}\b(on|against|to) (myself|my head)\b/,
+    /\b(going|gonna|planning|plan|want|wanna|intend|intending|thinking (about|of)|decided|ready) (to |on )?(overdose|overdosing|od|od'?ing)\b/,
   ],
+  suicideWord: [/\bsuicid\w*/, /\bself[- ]?harm\w*/],
   suicideMention: [/\bsuicid\w*/, /\bself[- ]?harm/, /\b988\b/, /\bcrisis line\b/],
 
   overdose: [
     /\boverdos\w*/,
-    /\bod'?d\b/,
+    /\bod'e?d\b|\boded\b|\bod'ing\b/,
     /\btook (all|a (whole|full) (bottle|pack|box)|too many|way too many|a bunch|a handful|handfuls)\b/,
-    /\b(swallowed|drank|drunk|ate|eaten|ingested|licked|chewed|got into)\b[^.]{0,30}\b(bleach|poison|detergent|laundry (pod|packet)s?|tide pods?|batter(y|ies)|button battery|antifreeze|cleaner|chemicals?|rat poison|mushrooms?|lighter fluid|gasoline|pesticide|weed killer|pills|vape (juice|liquid)|e-liquid|nicotine|someone else's (pills|medicine)|a whole bottle)\b/,
+    /\b(swallowed|drank|drunk|ate|eaten|ingested|licked|chewed|got into)\b[^.]{0,30}\b(bleach|poison|detergent|laundry (pod|packet)s?|tide pods?|batter(y|ies)|button battery|coin cells?|antifreeze|cleaner|chemicals?|rat poison|mushrooms?|lighter fluid|gasoline|pesticide|weed killer|vape (juice|liquid)|e-liquid|nicotine|someone else's (pills|medicine)|a whole bottle)\b/,
+    /\bgot into\b[^.]{0,40}\b(pills|meds|medicines?|medications?|tablets|vitamins|gummies)\b/,
+    /\b(swallowed|ate|eaten|chewed|took)\b[^.]{0,20}\b(a (bottle|handful|bunch|lot|ton|pile) of|all (of )?(my|his|her|the|their|the rest of)|someone else's|(grandma|grandpa|mom|dad|nana|papa|grandmother|grandfather)'s)\b[^.]{0,20}\b(pills|meds|medicines?|medications?|tablets|capsules|vitamins|gummies)\b/,
     /\bpoison(ed|ing)\b/,
     /\bcarbon monoxide\b/,
     /\b(gave|give|used|use|need|needed) (him |her |them )?(narcan|naloxone)\b/,
   ],
   overdoseMention: [/\boverdose\b/, /\bpoison\w*/, /\bnarcan\b|\bnaloxone\b/],
   extraDose: [
-    /\b(took|taken|accidentally took|i've taken)\b[^.]{0,30}\b(double dose|extra (dose|pill|tablet|capsule)|two doses|2 doses|twice|second dose|dose twice)\b/,
+    /\b(took|taken|accidentally took|i've taken)\b[^.]{0,30}\b(double dose|extra (doses?|pills?|tablets?|capsules?)|two doses|2 doses|twice|second dose|dose twice)\b/,
     /\b(double|doubled) (up )?(my|the|on my) (dose|pills?|medicine|meds)\b/,
-    /\baccidentally (took|taken|swallowed|gave)\b/,
+    /\baccidentally (took|taken|swallowed|gave|double[- ]?dosed)\b/,
     /\btook (my|his|her) \w+ (twice|two times)\b/,
-    /\bwrong (pill|medicine|medication|dose)\b/,
+    /\b(took|taken|gave|given|swallowed)\b[^.]{0,25}\bwrong (pills?|medicines?|medications?|dose|meds)\b/,
+    /\bdouble[- ]?dos(e|ed|es)\b[^.]{0,40}\bby (accident|mistake)\b/,
+    /\bby (accident|mistake)\b[^.]{0,40}\bdouble[- ]?dos(e|ed)\b/,
+    /\b(took|taken|swallowed|gave (him|her|them))\b[^.]{0,40}\bby (accident|mistake)\b/,
+    /\bdouble[- ]dosed\b/,
   ],
 
   stroke: [
@@ -716,15 +865,19 @@ const P = {
     /\bsudden(ly)?,? (a )?(severe|terrible|excruciating|explosive|horrible) headache\b/,
     /\bhaving a (stroke|mini[- ]?stroke|tia)\b/,
     /\b(it's|is it|might be|could be|think it's|think i'm having|think he's having|think she's having) a stroke\b/,
+    /\b(showing|having|getting|has|had) (the )?(signs?|symptoms?) of (a )?(stroke|mini[- ]?stroke|tia)\b/,
+    /\b(stroke|tia) (symptoms|signs)\b[^.]{0,25}\b(in|on|from) (my|his|her|our|their)\b/,
+    /\b(signs?|symptoms?) of (a )?stroke\b[^.]{0,10}\b(in|on) (my|his|her|our|their)\b/,
   ],
-  strokeMention: [/\bstrokes?\b/, /\btia\b/, /\bmini[- ]?stroke\b/, /\bbe ?fast\b/],
+  strokeMention: [/\bstrokes?\b/, /\btia\b/, /\bmini[- ]?stroke\b/, /\bf\.?a\.?s\.?t\.?\b(?= (test|signs?|acronym))/],
 
   heart: [
     /\bchest\b[^.]{0,20}\b(pain|pains|pressure|tightness|tight|discomfort|heaviness|heavy|squeez\w*|crushing|hurts?|hurting|aches?|aching)\b/,
     /\b(pain|pressure|tightness|discomfort|squeezing)\b[^.]{0,15}\b(in|on) (my|his|her|their|the) chest\b/,
-    /\b(elephant|weight) (sitting )?on (my|his|her) chest\b/,
+    /\b(elephant|weight|something heavy|ton of bricks|bricks?)\b[^.]{0,25}\b(on|against) (my|his|her|their|the) chest\b/,
     /\bhaving a heart attack\b/,
     /\b(it's|is it|might be|could be|think it's|think i'm having|think he's having|think she's having) a heart attack\b/,
+    /\b(showing|having|getting) (the )?(signs?|symptoms?) of a heart attack\b/,
     /\b(pain|ache|discomfort|tightness)\b[^.]{0,30}\b(spread\w*|radiat\w*|going|goes|moving|shoot\w*) (down|to|into|up) (my|his|her|the)? ?(left )?(arm|jaw|neck|back|shoulder)\b/,
     /\bcardiac arrest\b/,
   ],
@@ -733,17 +886,19 @@ const P = {
   breathing: [
     /\b(can't|cannot|unable to|struggling to|fighting to|could not|couldn't) (breathe|breath|catch (my|his|her|their) breath|get (enough )?air)\b/,
     /\b(gasping|suffocating|turning blue)\b/,
-    /\bchoking\b/,
+    // Not the figure of speech: "choking on how expensive my insulin is", "choking up".
+    /\bchoking\b(?! (up|back)\b| on (how|what|the (price|prices|cost|costs|bill|bills)|my words|the words|those words)\b)/,
     /\blips? (are |is |look |looks |turning |turned )?(blue|gray|grey|purple)\b/,
     /\b(severe(ly)?|very|really|extremely)\b[^.]{0,15}\b(short(ness)? of breath|trouble breathing|difficulty breathing)\b/,
     /\b(short(ness)? of breath|trouble breathing|difficulty breathing)\b[^.]{0,25}\b(at rest|resting|sitting still|lying down|can't talk|can't speak|getting worse fast)\b/,
     /\b(inhaler|albuterol|nebulizer)\b[^.]{0,30}\b(isn't|is not|not|doesn't|didn't|won't) (help|helping|work|working)\b/,
     /\bsevere asthma attack\b/,
     /\b(trouble|difficulty|hard time|having trouble|problems?) breathing\b/,
+    /\bbarely (breathe|breathing)\b/,
   ],
   breathingMild: [/\bshort(ness)? of breath\b/, /\b(winded|out of breath|breathless|wheez\w*)\b/, /\basthma attack\b/],
   breathingMention: [/\btrouble breathing\b/, /\bshortness of breath\b/, /\bchoking\b/],
-  mildQualifier: /\b(a little|a bit|slight(ly)?|mild(ly)?|sometimes|occasionally|when (i|he|she) (exercise|run|climb|walk|work out)|with exercise|climbing stairs|after (running|exercise))\b/,
+  mildQualifier: /\b(a little|a bit|slight(ly)?|mild(ly)?|sometimes|occasionally|when (i|he|she) (exercise|run|climb|walk|work out)|with (exercise|activity)|climbing stairs|after (running|exercise))\b/,
 
   anaphylaxis: [
     /\b(throat|tongue|lips?|mouth)\b[^.]{0,20}\b(swell\w*|swollen|closing|tight|tightening|puff\w*)/,
@@ -773,12 +928,15 @@ const P = {
     /\bseizure\b[^.]{0,30}\b(won't stop|not stopping|more than (5|five) minutes|lasting|for \d+ minutes)\b/,
     /\b(shaking|jerking)\b[^.]{0,20}\b(uncontrollably|all over|and (won't|isn't|not) respond\w*)\b/,
   ],
+  /** "I have epilepsy and I'm having one now" (only when seizures are mentioned). */
+  seizureOne: [/\b(am|is|are|'m|'s|'re|just) (having|had) (one|another( one)?)\b/],
   seizureMention: [/\bseizures?\b/, /\bepilepsy\b/],
 
   bleeding: [
     /\b(bleeding|blood)\b[^.]{0,25}\b(won't|will not|doesn't|does not|isn't|can't|cannot) (stop|slow)\w*/,
+    /\b(won't|will not|doesn't|does not|can't|cannot) stop bleeding\b/,
     /\b(bleeding|bleed\w*) (heavily|a lot|badly|profusely|everywhere|really bad)\b/,
-    /\b(heavy|severe|massive|uncontrolled|uncontrollable) bleeding\b/,
+    /\b(heavy|severe|massive|uncontrolled|uncontrollable|really bad) bleeding\b/,
     /\b(spurting|gushing|pouring|squirting) (blood|out)\b/,
     /\bblood (is )?(spurting|gushing|pouring)\b/,
     /\b(vomit\w*|throwing up|threw up|puking|coughing up|coughed up) (blood|bright red)\b/,
@@ -853,21 +1011,93 @@ const P = {
   ],
 };
 
-// ── Framing: educational vs. happening now ───────────────────────────────────
+// ── Framing: educational vs. happening now vs. in the past ───────────────────
 
 const EDUCATIONAL =
   /\b(what (are|is|were|does|do|would|should|can|happens)|what's|how (do|does|can|would|should|to|long|common|likely)|why (do|does|is|are)|when (should|to|do)|is it (normal|true|possible|safe)|signs? of|symptoms? of|warning signs?|explain|tell me about|learn( about)?|teach me|difference between|risk factors?|recogni[sz]e|how to (tell|spot|prevent|help|respond)|in case|prevent\w*|lesson|quiz|definition|mean|means|side effects?|can \w+ cause|does \w+ cause|statistics|first aid)\b/;
-const HYPOTHETICAL = /\b(if|in case|when|whether) (someone|somebody|a person|people|you|your|a child|a friend|anyone|a loved one|someone's)\b|\bif (my|his|her|i) \w+ (ever|has|had|gets|got|were)\b|\bif i ever\b/;
+const EDUCATIONAL_G = new RegExp(EDUCATIONAL.source, 'g');
+/**
+ * "What should I do?", "what does that mean?" after describing a symptom ask for help with
+ * something happening — they are not what makes a message educational.
+ */
+const ACTION_QUESTION =
+  /\bwhat (should|do|can|must|shall) (i|we|you|he|she|they) do\b|\bwhat (does|do) (that|this|it) mean( about me| for me)?\b|\bwhat now\b|\bshould (i|we) (go|call|worry|be worried|get help|see someone|head)\b|\bis (that|this) (normal|bad|serious|dangerous|an emergency|ok|okay)\b/g;
+const HYPOTHETICAL =
+  /\b(if|in case|when|whether) (someone|somebody|a person|people|you|your|a child|a friend|anyone|a loved one|someone's)\b|\bif (my|his|her|our|i) (\w+ ){1,2}?(ever|has|had|gets|got|were)\b|\bif i ever\b|\bif (my|his|her|our) \w+ (says|said|tells|told|talks|mentions)\b/;
 const TIME_CUE =
   /\b(right now|currently|at the moment|just (started|happened|now|began)|this (morning|afternoon|evening)|tonight|minutes? ago|an hour ago|hours? ago|since (this|last night|yesterday|\d)|all of a sudden|suddenly|help me|please help|hurry|is happening|happening now|won't stop)\b/;
 /** Recurring, not-happening-now symptoms: worth a same-day call rather than 911. */
-const RECURRENT_CUE = /\b(sometimes|occasionally|now and then|from time to time|every so often|every now and then|on and off)\b/;
-const PAST_CUE =
-  /\b(last (week|month|year)|years? ago|months? ago|weeks? ago|used to|in the past|history of|a while ago|previously|once had|back in|when i was (a kid|young|younger))\b/;
+const RECURRENT_CUE = /\b(sometimes|occasionally|now and then|from time to time|every so often|every now and then|on and off|comes and goes|come and go)\b/;
+/** Words that put a phrase in the present, even next to an old event ("…and now I have chest pain"). */
+const CURRENT_CUE =
+  /\b(now|right now|currently|at the moment|today|tonight|still|again|this (morning|afternoon|evening)|just (started|happened|now|began)|minutes? ago|an hour ago|hours? ago|since)\b/;
+/** Long-past events ("had a seizure years ago"): an info card. */
+const DISTANT_PAST =
+  /\b(last (month|year)|(a few|few|several|many|a couple of?|\d+|two|three|four|five|six|ten) (months|years) ago|a (month|year) ago|years? ago|months? ago|used to|in the past|history of|hx of|a while ago|long time ago|previously|once had|back in|when i was (a kid|a child|young|younger|little|pregnant|in)|as a (kid|child|teen|teenager)|growing up)\b/;
+/** Recent, finished events ("chest pain last week, it went away"): chest pain still needs a check today. */
+const RECENT_PAST =
+  /\b(yesterday|last (night|week|weekend)|(a few|few|several|a couple of?|\d+|two|three|four|five|six) (days|weeks) ago|a (day|week) ago|days? ago|weeks? ago|over the weekend|went away|has gone away|goes away|go away|came and went|resolved|stopped on its own)\b/;
+const SEGMENT_BREAK = /\b(?:and|then|so|now|while|because|when|after)\b/g;
 const PERSONAL_SUBJECT =
-  /\b(i|i'm|i am|i've|my|me|he|she|he's|she's|they|they're|we|we're|mom|dad|husband|wife|son|daughter|baby|child|kid|friend|partner|grandma|grandpa|mother|father|brother|sister|roommate|coworker)\b/;
+  /\b(i|i'm|i am|i've|my|me|he|she|he's|she's|they|they're|we|we're|mom|mum|dad|husband|wife|spouse|son|daughter|baby|toddler|child|kid|teen|teenager|friend|partner|boyfriend|girlfriend|grandma|grandpa|grandmother|grandfather|mother|father|brother|sister|uncle|aunt|roommate|coworker|neighbor)\b/;
 const PRESENT_VERB =
-  /\b(is|are|am|'s|'re|'m|keeps?|can't|cannot|won't|isn't|feels?|feeling|have|has|having|getting|got|started|took|taken|swallowed|ate|drank|looks?|seems?)\b/;
+  /\b(is|are|am|'s|'re|'m|keeps?|can't|cannot|won't|isn't|feels?|feeling|hurts?|hurting|aches?|aching|have|has|having|getting|got|started|took|taken|swallowed|overdosed|ate|drank|looks?|seems?|showing)\b/;
+/** A clause in the writer's own voice inside a pasted note ("my dad's face is drooping right now"). */
+const OWN_VOICE = /\b(i|i'm|i am|i've|my|me|myself|we|we're|our)\b/;
+const FAMILY = /\b(mom|mum|dad|husband|wife|son|daughter|baby|toddler|kid|grandma|grandpa)\b/;
+const PLEA = /\b(right now|help me|please help|hurry|should (i|we) go)\b/;
+/** Self-injury that may be accidental ("cut myself"): after the fact it is an info card, not an alarm. */
+const CUT_SELF = /^(cut|cutting) /;
+/** Clinical scenarios about a patient ("58M with crushing chest pain", "pt with SI"). */
+const CLINICAL_CASE = /\b(pt|pts|patient|patients|my patient|\d+ ?(y\/?o|yo|year[- ]olds?|yom|yof|m|f)|presents?|presenting)\b/;
+const CLINICIAN_SELF = /\b(i|i'm|i am|i've|me|myself)\b/;
+/** A bleeding clause about a wound or vomiting/coughing blood (wound first aid applies). */
+const WOUND_CONTEXT =
+  /\b(cut|cuts|wound|gash|laceration|injur\w*|hand|finger|arm|leg|foot|knee|head|nose|face|vomit\w*|throwing up|threw up|puking|cough\w*|spurting|gushing|squirting)\b/;
+
+/** In a pasted note, words the patient or a family member typed themselves (never downgraded). */
+function writersOwnVoice(clause: string, text: string): boolean {
+  return OWN_VOICE.test(clause) || (FAMILY.test(clause) && !/\b(pt|patient)\b/.test(clause)) || PLEA.test(text);
+}
+
+/** A clause about the person themselves right now, ignoring question words ("what are", "signs of"). */
+function personalNow(clause: string): boolean {
+  return PERSONAL_SUBJECT.test(clause) && PRESENT_VERB.test(clause.replace(EDUCATIONAL_G, ' '));
+}
+
+type Timing = 'current' | 'recent' | 'past';
+
+/** The stretch of a clause around `index`, cut at "and", "now", "then"… (the cut word starts the next stretch). */
+function segmentAround(clause: string, index: number): string {
+  let start = 0;
+  let end = clause.length;
+  for (const m of clause.matchAll(SEGMENT_BREAK)) {
+    if (m.index <= index) start = m.index;
+    else {
+      end = m.index;
+      break;
+    }
+  }
+  return clause.slice(start, end);
+}
+
+function pastKind(text: string): Exclude<Timing, 'current'> | null {
+  if (DISTANT_PAST.test(text)) return 'past';
+  if (RECENT_PAST.test(text)) return 'recent';
+  return null;
+}
+
+/** When the matched phrase happened, judged from its own part of the sentence. */
+function timingOf(hit: Hit, clauses: Clause[]): Timing {
+  const segment = segmentAround(hit.clause, hit.index);
+  if (CURRENT_CUE.test(segment)) return 'current';
+  const own = pastKind(segment);
+  if (own) return own;
+  // A short lead-in such as "Last week," or "Years ago," sets the time for the clause after it.
+  const prev = hit.clauseIndex > 0 ? clauses[hit.clauseIndex - 1] : undefined;
+  if (prev && prev.text.split(/\s+/).length <= 4) return pastKind(prev.text) ?? 'current';
+  return 'current';
+}
 
 // ── BP / temperature / glucose numbers ───────────────────────────────────────
 
@@ -912,11 +1142,20 @@ export interface TriageResult {
 }
 
 export interface TriageOptions {
-  /** The message is pasted clinician shorthand (explain-note): downgrade alarms to info. */
+  /**
+   * The message is a pasted clinician note: its findings become an info card — except
+   * clauses in the writer's own voice ("I have chest pain right now").
+   */
   noteLike?: boolean;
+  /**
+   * 'clinician': case descriptions about a patient are not alarms for the doctor asking
+   * (no triage card); only first-person reports ("I'm having chest pain") are.
+   */
+  audience?: 'patient' | 'clinician';
 }
 
 const ORDER: TriageCategory[] = [
+  'battery',
   'overdose',
   'suicide',
   'stroke',
@@ -948,90 +1187,133 @@ const ORDER: TriageCategory[] = [
 interface Detection {
   category: TriageCategory;
   level: 'emergency' | 'urgent';
-  clause: string;
+  hits: Hit[];
 }
 
-function detect(text: string, clauses: string[]): Detection[] {
+/** Count-based ingestions: ≥10 pills (≥5 for a child) is an overdose, fewer extra pills an extra dose. */
+function countHits(clauses: Clause[], text: string): { overdose: Hit[]; extra: Hit[] } {
+  const child = CHILD_SUBJECT.test(text);
+  const overdose: Hit[] = [];
+  const extra: Hit[] = [];
+  clauses.forEach((clause, clauseIndex) => {
+    if (clause.negatedList) return;
+    for (const m of clause.text.matchAll(COUNT_TAKEN)) {
+      if (isNegated(clause.text, m.index)) continue;
+      const raw = m[1] ?? '';
+      const count = COUNT_WORDS[raw] ?? Number(raw);
+      if (!Number.isFinite(count)) continue;
+      const hit: Hit = { category: 'overdose', match: m[0], clause: clause.text, clauseIndex, index: m.index };
+      if (count >= 10 || (child && count >= 5)) overdose.push(hit);
+      else if (count >= 5 || (child && count >= 3)) extra.push({ ...hit, category: 'extra-dose' });
+    }
+  });
+  return { overdose, extra };
+}
+
+function detect(text: string, clauses: Clause[]): Detection[] {
   const found: Detection[] = [];
-  const add = (category: TriageCategory, hit: Hit | null, level: 'emergency' | 'urgent' = CATEGORY_INFO[category].level) => {
-    if (hit && !found.some((f) => f.category === category)) found.push({ category, level, clause: hit.clause });
+  const has = (category: TriageCategory) => found.some((f) => f.category === category);
+  const add = (category: TriageCategory, hits: Hit[], level: 'emergency' | 'urgent' = CATEGORY_INFO[category].level) => {
+    if (hits.length > 0 && !has(category)) found.push({ category, level, hits });
   };
-  const clauseHit = (patterns: RegExp[], category: TriageCategory) => findHit(clauses, patterns, category);
+  const hitsFor = (patterns: RegExp[], category: TriageCategory, accept?: Accept) => findHits(clauses, patterns, category, accept);
 
-  add('suicide', clauseHit(P.suicide, 'suicide'));
-  add('overdose', clauseHit(P.overdose, 'overdose'));
-  if (!found.some((f) => f.category === 'overdose')) add('extra-dose', clauseHit(P.extraDose, 'extra-dose'));
-  add('stroke', clauseHit(P.stroke, 'stroke'));
-  add('heart', clauseHit(P.heart, 'heart'));
+  const selfHarm = hitsFor(P.suicideSelf, 'suicide').map((hit) => ({ ...hit, strong: true }));
+  add('suicide', [...selfHarm, ...hitsFor(P.suicideWord, 'suicide')]);
 
-  const severeBreathing = clauseHit(P.breathing, 'breathing');
-  if (severeBreathing) {
-    const mild = P.mildQualifier.test(severeBreathing.clause) && !/\b(can't|cannot|gasping|choking|blue)\b/.test(severeBreathing.clause);
-    if (mild) add('breathing-mild', severeBreathing);
-    else add('breathing', severeBreathing);
+  // "Took all my pills" is routine ("…this morning") unless the person is also talking about suicide.
+  const notRoutine: Accept = (clause, m) => has('suicide') || !/^took all\b/.test(m[0]) || !ROUTINE_DOSE.test(clause.slice(m.index));
+  const counted = countHits(clauses, text);
+  const poison = [...hitsFor(P.overdose, 'overdose', notRoutine), ...counted.overdose];
+  add('battery', poison.filter((h) => BATTERY.test(h.clause)).map((h) => ({ ...h, category: 'battery' as const })));
+  add('overdose', poison.filter((h) => !BATTERY.test(h.clause)));
+  if (!has('overdose') && !has('battery')) {
+    const usual: Accept = (clause) => !USUAL_SCHEDULE.test(clause);
+    add('extra-dose', [...hitsFor(P.extraDose, 'extra-dose', usual), ...counted.extra]);
+  }
+  add('stroke', hitsFor(P.stroke, 'stroke'));
+  add('heart', hitsFor(P.heart, 'heart'));
+
+  const severeBreathing = hitsFor(P.breathing, 'breathing');
+  if (severeBreathing.length > 0) {
+    const isMild = (hit: Hit) => P.mildQualifier.test(hit.clause) && !/\b(can't|cannot|gasping|choking|blue)\b/.test(hit.clause);
+    const serious = severeBreathing.filter((hit) => !isMild(hit));
+    if (serious.length > 0) add('breathing', serious);
+    else add('breathing-mild', severeBreathing.map((hit) => ({ ...hit, category: 'breathing-mild' as const })));
   } else {
-    add('breathing-mild', clauseHit(P.breathingMild, 'breathing-mild'));
+    add('breathing-mild', hitsFor(P.breathingMild, 'breathing-mild'));
   }
 
-  add('anaphylaxis', clauseHit(P.anaphylaxis, 'anaphylaxis'));
-  const face = clauseHit(P.anaphylaxisFace, 'anaphylaxis');
-  if (face && hasAny(clauses, P.allergyContext)) add('anaphylaxis', face);
-  const hives = clauseHit(P.hives, 'anaphylaxis');
-  if (hives && hasAny(clauses, P.hivesDanger)) add('anaphylaxis', hives);
+  add('anaphylaxis', hitsFor(P.anaphylaxis, 'anaphylaxis'));
+  if (hasAny(clauses, P.allergyContext)) add('anaphylaxis', hitsFor(P.anaphylaxisFace, 'anaphylaxis'));
+  if (hasAny(clauses, P.hivesDanger)) add('anaphylaxis', hitsFor(P.hives, 'anaphylaxis'));
 
-  add('unconscious', clauseHit(P.unconscious, 'unconscious'));
-  if (!found.some((f) => f.category === 'unconscious')) add('fainting', clauseHit(P.fainting, 'fainting'));
-  add('seizure', clauseHit(P.seizure, 'seizure'));
-  add('bleeding', clauseHit(P.bleeding, 'bleeding'));
-  add('gi-bleed', clauseHit(P.giBleed, 'gi-bleed'));
-  if (!found.some((f) => f.category === 'bleeding')) add('wound', clauseHit(P.wound, 'wound'));
+  add('unconscious', hitsFor(P.unconscious, 'unconscious'));
+  if (!has('unconscious')) add('fainting', hitsFor(P.fainting, 'fainting'));
+  add('seizure', hitsFor(P.seizure, 'seizure'));
+  if (hasAny(clauses, P.seizureMention)) add('seizure', hitsFor(P.seizureOne, 'seizure'));
+  add('bleeding', hitsFor(P.bleeding, 'bleeding'));
+  add('gi-bleed', hitsFor(P.giBleed, 'gi-bleed'));
+  if (!has('bleeding')) add('wound', hitsFor(P.wound, 'wound'));
 
-  const head = clauseHit(P.head, 'head-injury');
-  if (head) add('head-injury', head, hasAny(clauses, P.headDanger) ? 'emergency' : 'urgent');
+  const head = hitsFor(P.head, 'head-injury');
+  add('head-injury', head, hasAny(clauses, P.headDanger) ? 'emergency' : 'urgent');
 
-  const pregnant = clauseHit(P.pregnant, 'pregnancy');
-  if (pregnant && hasAny(clauses, P.pregnancyDanger)) add('pregnancy', pregnant);
+  if (hasAny(clauses, P.pregnancyDanger)) add('pregnancy', hitsFor(P.pregnant, 'pregnancy'));
 
-  const fever = clauseHit(P.fever, 'meningitis');
+  const fever = hitsFor(P.fever, 'meningitis');
   const tempF = temperatureF(text);
-  const hasFever = fever !== null || (tempF !== null && tempF >= 100.4);
+  const hasFever = fever.length > 0 || (tempF !== null && tempF >= 100.4);
+  const tempHit = (category: TriageCategory) => readingHit(clauses, category, /\b(fever|temp\w*|thermometer|degrees)\b|\d{2,3}(\.\d)?\s*°/);
   if (hasFever && (hasAny(clauses, P.stiffNeck) || hasAny(clauses, P.badRash))) {
-    add('meningitis', fever ?? { category: 'meningitis', clause: text, index: 0 });
+    add('meningitis', fever.length > 0 ? fever : [tempHit('meningitis')]);
   }
 
-  const sepsisWord = clauseHit(P.sepsis, 'sepsis');
-  if (sepsisWord) add('sepsis', sepsisWord);
-  else if (hasAny(clauses, P.infectionContext) && hasAny(clauses, P.sepsisSigns)) {
-    add('sepsis', clauseHit(P.sepsisSigns, 'sepsis'));
-  }
+  const sepsisWord = hitsFor(P.sepsis, 'sepsis');
+  if (sepsisWord.length > 0) add('sepsis', sepsisWord);
+  else if (hasAny(clauses, P.infectionContext)) add('sepsis', hitsFor(P.sepsisSigns, 'sepsis'));
 
   const bp = bloodPressureReading(text);
   if (bp && (bp.systolic >= 180 || bp.diastolic >= 120)) {
     const symptomatic = hasAny(clauses, P.bpSymptoms);
-    add('bp-crisis', { category: 'bp-crisis', clause: text, index: 0 }, symptomatic ? 'emergency' : 'urgent');
+    add('bp-crisis', [readingHit(clauses, 'bp-crisis', /\d{2,3}\s*(?:\/|over)\s*\d{2,3}/)], symptomatic ? 'emergency' : 'urgent');
   }
 
   const glucose = glucoseReading(text);
-  const lowWords = clauseHit(P.lowSugarWords, 'low-sugar');
-  if ((glucose !== null && glucose < 70) || lowWords) {
-    add('low-sugar', lowWords ?? { category: 'low-sugar', clause: text, index: 0 }, hasAny(clauses, P.sugarSevere) ? 'emergency' : 'urgent');
+  const lowWords = hitsFor(P.lowSugarWords, 'low-sugar');
+  const glucoseHit = (category: TriageCategory) => readingHit(clauses, category, /\b(blood sugar|blood glucose|glucose|sugar|bg|bs|reading)\b/);
+  if ((glucose !== null && glucose < 70) || lowWords.length > 0) {
+    add('low-sugar', lowWords.length > 0 ? lowWords : [glucoseHit('low-sugar')], hasAny(clauses, P.sugarSevere) ? 'emergency' : 'urgent');
   } else if (glucose !== null && glucose >= 300) {
-    add('high-sugar', { category: 'high-sugar', clause: text, index: 0 }, hasAny(clauses, P.dkaSigns) ? 'emergency' : 'urgent');
+    add('high-sugar', [glucoseHit('high-sugar')], hasAny(clauses, P.dkaSigns) ? 'emergency' : 'urgent');
   }
 
   if (hasFever) {
-    const infant = clauseHit(P.infant, 'infant-fever');
-    if (infant && !/\b([4-9]|1[0-2]|four|five|six|seven|eight|nine|ten|eleven|twelve)[- ]months?[- ]old\b|\byears? old\b/.test(text)) {
+    const infant = hitsFor(P.infant, 'infant-fever');
+    if (infant.length > 0 && !/\b([4-9]|1[0-2]|four|five|six|seven|eight|nine|ten|eleven|twelve)[- ]months?[- ]old\b|\byears? old\b/.test(text)) {
       add('infant-fever', infant);
     } else if ((tempF !== null && tempF >= 103) || hasAny(clauses, P.highFeverWords)) {
-      add('high-fever', fever ?? { category: 'high-fever', clause: text, index: 0 });
+      add('high-fever', fever.length > 0 ? fever.map((hit) => ({ ...hit, category: 'high-fever' as const })) : [tempHit('high-fever')]);
     }
   }
 
-  add('dehydration', clauseHit(P.dehydration, 'dehydration'));
-  add('infection', clauseHit(P.infection, 'infection'));
-  add('severe-pain', clauseHit(P.severePain, 'severe-pain'));
+  add('dehydration', hitsFor(P.dehydration, 'dehydration'));
+  add('infection', hitsFor(P.infection, 'infection'));
+  add('severe-pain', hitsFor(P.severePain, 'severe-pain'));
   return found;
+}
+
+/** Most important first; bleeding in pregnancy gets the pregnancy steps, not wound first aid. */
+function orderDetections(found: Detection[]): Detection[] {
+  const sorted = [...found].sort((a, b) => ORDER.indexOf(a.category) - ORDER.indexOf(b.category));
+  const bleeding = sorted.findIndex((d) => d.category === 'bleeding');
+  const pregnancy = sorted.find((d) => d.category === 'pregnancy');
+  if (bleeding >= 0 && pregnancy && !sorted[bleeding]!.hits.some((hit) => WOUND_CONTEXT.test(hit.clause))) {
+    const rest = sorted.filter((d) => d !== pregnancy);
+    rest.splice(bleeding, 0, pregnancy);
+    return rest;
+  }
+  return sorted;
 }
 
 const MENTIONS: Array<[TriageCategory, RegExp[]]> = [
@@ -1060,36 +1342,55 @@ function dedupeActions(actions: TriageAction[]): TriageAction[] {
   });
 }
 
+/** How a match reads: happening now, a general question, a past event, a pasted note, or a clinician's case. */
+type Framing = 'live' | 'educational' | 'note' | 'past' | 'clinical';
+const FRAMING_RANK: Record<Framing, number> = { live: 0, educational: 1, note: 2, past: 3, clinical: 4 };
+
 export function triageMessage(message: string, options: TriageOptions = {}): TriageResult {
-  const text = normalizeForTriage(message);
+  const text = normalizeForTriage(expandShorthand(message));
   const clauses = splitClauses(text);
-  const detections = detect(text, clauses).sort((a, b) => ORDER.indexOf(a.category) - ORDER.indexOf(b.category));
+  const detections = orderDetections(detect(text, clauses));
 
-  const educationalFraming = EDUCATIONAL.test(text);
+  const educationalFraming = EDUCATIONAL.test(text.replace(ACTION_QUESTION, ' '));
   const timeCue = TIME_CUE.test(text);
-  const pastCue = PAST_CUE.test(text) && !timeCue;
+  const clinician = options.audience === 'clinician';
+  const clinicalCase = clinician && CLINICAL_CASE.test(text);
 
-  const isEducational = (clause: string): boolean => {
-    if (timeCue) return false;
-    const hypothetical = HYPOTHETICAL.test(clause) || HYPOTHETICAL.test(text);
-    if (hypothetical) return true;
-    const personalNow = PERSONAL_SUBJECT.test(clause) && PRESENT_VERB.test(clause);
-    return educationalFraming && !personalNow;
+  const frame = (hit: Hit, timing: Timing): Framing => {
+    if (clinician && (clinicalCase || !CLINICIAN_SELF.test(hit.clause))) return 'clinical';
+    if (timing === 'past') return 'past';
+    if (timing === 'recent' && hit.category === 'suicide' && (!hit.strong || CUT_SELF.test(hit.match))) return 'past';
+    if (options.noteLike && !writersOwnVoice(hit.clause, text)) return 'note';
+    if (timeCue) return 'live';
+    // "If someone has chest pain, …" — judged for the clause (and an "if …," lead-in right before it),
+    // so "I read that if you have chest pain you call 911. I have crushing chest pain" stays live.
+    const leadIn = hit.clauseIndex > 0 ? clauses[hit.clauseIndex - 1]!.text : '';
+    if (HYPOTHETICAL.test(hit.clause) || (/^(if|in case|when|whether)\b/.test(leadIn) && HYPOTHETICAL.test(leadIn))) return 'educational';
+    if (hit.strong) return 'live';
+    return educationalFraming && !personalNow(hit.clause) ? 'educational' : 'live';
   };
 
-  // Past events ("had a seizure years ago") get an info card rather than an alarm.
-  const live = pastCue ? [] : detections.filter((d) => !isEducational(d.clause));
-  const educationalHits = detections.filter((d) => pastCue || isEducational(d.clause)).map((d) => d.category);
+  // Each category is judged by its most "live" match.
+  const judged = detections.map((d) => {
+    const readings = d.hits.map((hit) => {
+      const timing = timingOf(hit, clauses);
+      return { timing, framing: frame(hit, timing) };
+    });
+    const best = readings.reduce((a, b) => (FRAMING_RANK[b.framing] < FRAMING_RANK[a.framing] ? b : a));
+    return { ...d, ...best };
+  });
 
-  if (live.length > 0 && !options.noteLike) {
-    const recurrent = RECURRENT_CUE.test(text) && !timeCue;
-    const adjusted = live.map((d) =>
-      recurrent && d.level === 'emergency' && d.category === 'heart' ? { ...d, level: 'urgent' as const } : d,
-    );
-    const top = adjusted.find((d) => d.level === 'emergency') ?? adjusted[0]!;
+  const recurrent = RECURRENT_CUE.test(text) && !timeCue;
+  const live = judged
+    .filter((d) => d.framing === 'live')
+    // Chest pain that comes and goes, or that has already passed, needs a same-day check (urgent), not 911.
+    .map((d) => (d.category === 'heart' && d.level === 'emergency' && (recurrent || d.timing === 'recent') ? { ...d, level: 'urgent' as const } : d));
+
+  if (live.length > 0) {
+    const top = live.find((d) => d.level === 'emergency') ?? live[0]!;
     const primary = CATEGORY_INFO[top.category];
-    const others = adjusted.filter((d) => d !== top);
-    const suicideAndOverdose = adjusted.some((d) => d.category === 'suicide') && adjusted.some((d) => d.category === 'overdose');
+    const others = live.filter((d) => d !== top);
+    const suicideAndOverdose = live.some((d) => d.category === 'suicide') && live.some((d) => d.category === 'overdose' || d.category === 'battery');
 
     let actions = [...primary.actions, ...others.flatMap((d) => CATEGORY_INFO[d.category].actions)];
     if (suicideAndOverdose) actions = [CALL_911, CALL_988, POISON_HELP, CHAT_988];
@@ -1109,32 +1410,35 @@ export function triageMessage(message: string, options: TriageOptions = {}): Tri
         message: [primaryMessage, ...extra].join(' '),
         actions: dedupeActions(actions).slice(0, 4),
       },
-      categories: adjusted.map((d) => d.category),
+      categories: live.map((d) => d.category),
       educational: false,
       topic: primary.topic,
     };
   }
 
-  // Educational questions (or pasted notes): an info card, never an alarm.
+  // Educational questions, past events, pasted notes: an info card, never an alarm.
   const mentioned = educationalFraming
     ? MENTIONS.filter(([, patterns]) => patterns.some((p) => p.test(text))).map(([category]) => category)
     : [];
-  const infoCategories = [...new Set([...educationalHits, ...(options.noteLike ? live.map((d) => d.category) : []), ...mentioned])].sort(
-    (a, b) => ORDER.indexOf(a) - ORDER.indexOf(b),
-  );
+  const infoCategories = [...new Set([...judged.map((d) => d.category), ...mentioned])].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
   const first = infoCategories[0];
   if (!first) return { triage: null, categories: [], educational: educationalFraming, topic: null };
 
   const info = CATEGORY_INFO[first];
+  // A clinician's case description is the subject of the question, not an alarm for them.
+  if (clinician) return { triage: null, categories: infoCategories, educational: true, topic: info.topic };
+
+  const framing = judged.find((d) => d.category === first)?.framing ?? 'educational';
   const infoActions =
-    first === 'suicide' ? [CALL_988, CHAT_988] : first === 'overdose' || first === 'extra-dose' ? [POISON_HELP, CALL_911] : [CALL_911];
-  const infoMessage = options.noteLike
-    ? 'This note mentions symptoms that can be serious. If you are having them right now, call 911.'
-    : pastCue
-      ? `${info.also} If anything like this is happening now, get help right away.`
-      : info.level === 'emergency'
-      ? `If you notice these signs in yourself or someone else, don't wait: ${info.message.charAt(0).toLowerCase()}${info.message.slice(1)}`
-      : info.message;
+    first === 'suicide' ? [CALL_988, CHAT_988] : first === 'overdose' || first === 'extra-dose' || first === 'battery' ? [POISON_HELP, CALL_911] : [CALL_911];
+  const infoMessage =
+    framing === 'note'
+      ? 'This note mentions symptoms that can be serious. If you are having them right now, call 911.'
+      : framing === 'past'
+        ? `${info.also} If anything like this is happening now, get help right away.`
+        : info.level === 'emergency'
+          ? `If you notice these signs in yourself or someone else, don't wait: ${info.message.charAt(0).toLowerCase()}${info.message.slice(1)}`
+          : info.message;
   return {
     triage: { level: 'info', title: info.infoTitle, message: infoMessage, actions: infoActions },
     categories: infoCategories,
@@ -1147,4 +1451,3 @@ export function triageMessage(message: string, options: TriageOptions = {}): Tri
 export function triageSources(category: TriageCategory): CitationDraft[] {
   return CATEGORY_INFO[category].sources;
 }
-

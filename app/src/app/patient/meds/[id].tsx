@@ -264,6 +264,7 @@ export default function MedDetailScreen() {
           onRetry={() => void refills.refresh()}
           doctorName={doctorShort}
           past={past}
+          now={now}
           onRequested={(r) => refills.setData((prev) => upsertRefill(prev ?? [], r))}
         />
       </Card>

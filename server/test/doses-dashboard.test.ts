@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { addDays, todayKey } from '../src/db/dates';
+import { addDays, dateRange, todayKey } from '../src/db/dates';
 import { DEMO_ACCOUNTS, DEMO_IDS } from '../src/db/seed';
 import { computeAdherence } from '../src/routes/adherence';
 import type { DoseLog, PatientDashboard, PatientSummary, Prescription } from '../src/shared/contracts';
@@ -210,15 +210,18 @@ describe('computeAdherence', () => {
     expect(early).toEqual({ scheduled: 14, taken: 1, rate: 1 / 14 });
   });
 
-  it('respects start/end dates, skips discontinued and as-needed meds', () => {
+  it('respects start/end dates, skips paused, discontinued and as-needed meds', () => {
     const recent = { ...base, startDate: '2026-03-09' }; // yesterday ×2 + today 08:00
     expect(computeAdherence([recent], [log('2026-03-09', '08:00')], opts)).toEqual({ scheduled: 3, taken: 1, rate: 1 / 3 });
     const ended = { ...base, endDate: '2026-03-04' }; // 03-04 only
     expect(computeAdherence([ended], [], opts).scheduled).toBe(2);
     expect(computeAdherence([{ ...base, status: 'discontinued' }], [], opts).rate).toBeNull();
     expect(computeAdherence([{ ...base, times: [] }], [log('2026-03-10', '09:00')], opts).rate).toBeNull();
-    // Paused prescriptions are still counted (non-discontinued).
-    expect(computeAdherence([{ ...base, status: 'paused' }], [], opts).scheduled).toBe(13);
+    // Doses the patient correctly skips while a med is paused are not misses.
+    expect(computeAdherence([{ ...base, status: 'paused' }], [], opts).rate).toBeNull();
+    const everyDose = dateRange('2026-03-04', '2026-03-10').flatMap((d) => [log(d, '08:00'), log(d, '20:00')]);
+    const paused: Prescription = { ...base, id: 'rx_b', status: 'paused' };
+    expect(computeAdherence([base, paused], everyDose, opts)).toEqual({ scheduled: 14, taken: 14, rate: 1 });
   });
 
   it('ignores logs outside the window or for other slots', () => {

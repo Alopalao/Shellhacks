@@ -4,7 +4,7 @@ import { AppText, Badge, Button, Card } from '@/components/ui';
 import type { Prescription, RefillRequest } from '@/lib/contracts';
 import { formatDate, formatTime } from '@/lib/format';
 import { colors, radius, spacing } from '@/theme';
-import { doseSummary, iconForForm, medLabel, purposeLabel, refillsLabel, timesSummary } from '../format';
+import { doseSummary, iconForForm, medLabel, purposeLabel, refillState, refillsLabel, timesSummary } from '../format';
 import type { LiveHighlight } from '../useLiveHighlights';
 import { LiveUpdateTag } from './LiveUpdateTag';
 
@@ -20,15 +20,22 @@ export interface MedCardProps {
   onPress: () => void;
   onRequestRenewal?: () => void;
   requesting?: boolean;
+  /** Current time (for "just prescribed" vs. "out of refills"). Defaults to render time. */
+  now?: Date;
 }
 
 /** A medication in the Meds list: name, how to take it, times, purpose, prescriber, refills. */
-export function MedCard({ rx, prescriber, refill, past = false, highlight, onPress, onRequestRenewal, requesting }: MedCardProps) {
+export function MedCard({ rx, prescriber, refill, past = false, highlight, onPress, onRequestRenewal, requesting, now }: MedCardProps) {
   const title = medLabel(rx);
   const how = doseSummary(rx);
   const purpose = purposeLabel(rx.purpose);
   const pendingRefill = refill?.status === 'pending' ? refill : undefined;
-  const needsRenewal = !rx.selfReported && !past && rx.refillsRemaining === 0;
+  const refills = refillState(rx, now);
+  const refillsText = refillsLabel(rx.refillsRemaining, refills);
+  const showRefills = !rx.selfReported && !past;
+  // A just-written prescription with no refills isn't "out" yet: no warning or renewal prompt,
+  // but still show a renewal the patient already asked for.
+  const needsRenewal = showRefills && (refills === 'out' || (refills === 'first-fill' && !!pendingRefill));
   const statusBadge =
     past ? (
       <Badge label={rx.status === 'discontinued' ? 'Stopped' : 'Ended'} tone="neutral" />
@@ -42,7 +49,7 @@ export function MedCard({ rx, prescriber, refill, past = false, highlight, onPre
     rx.times.length ? `at ${timesSummary(rx.times).replace(/ · /g, ', ')}` : 'no set times',
     purpose,
     rx.selfReported ? 'self-reported' : `prescribed by ${prescriber}`,
-    rx.selfReported || past ? null : refillsLabel(rx.refillsRemaining),
+    showRefills ? refillsText : null,
     rx.status === 'paused' && !past ? 'paused' : null,
     past ? 'no longer taking' : null,
     highlight?.label,
@@ -113,13 +120,13 @@ export function MedCard({ rx, prescriber, refill, past = false, highlight, onPre
               {prescriber}
             </AppText>
           </View>
-          {rx.selfReported || past ? null : (
+          {showRefills ? (
             <Badge
-              label={refillsLabel(rx.refillsRemaining)}
-              tone={rx.refillsRemaining > 0 ? 'neutral' : 'warning'}
-              icon={rx.refillsRemaining > 0 ? 'repeat' : 'alert-circle-outline'}
+              label={refillsText}
+              tone={refills === 'out' ? 'warning' : 'neutral'}
+              icon={refills === 'available' ? 'repeat' : refills === 'out' ? 'alert-circle-outline' : 'information-circle-outline'}
             />
-          )}
+          ) : null}
         </View>
       </Pressable>
 

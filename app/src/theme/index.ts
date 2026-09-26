@@ -13,7 +13,7 @@ export const colors = {
   yellowBorder: '#F2DE8A',
   text: '#0A0A0A',
   textMuted: '#555555',
-  textSubtle: '#8A8A8A',
+  textSubtle: '#6B6B6B', // ≥ 4.5:1 (WCAG AA) on white and every light surface below
   textOnYellow: '#0A0A0A',
   textOnBlack: '#FFFFFF',
   black: '#0A0A0A',

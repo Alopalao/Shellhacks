@@ -23,7 +23,9 @@ import {
   AdherenceLegend,
   ageLabel,
   doctorHrefs,
+  isPatientUnavailable,
   paramValue,
+  PatientUnavailable,
   PrescriptionCard,
   RefillRequestCard,
   removeById,
@@ -103,11 +105,19 @@ function PatientChart({ patientId }: { patientId: string }) {
       </Screen>
     );
   }
+  // Not found / not (or no longer) assigned to this doctor — retrying can't help, and a chart kept
+  // from before a reassignment must not stay actionable.
+  if (isPatientUnavailable(q.error)) {
+    return (
+      <Screen header={<ScreenHeader title="Patient" back={back} />}>
+        <PatientUnavailable error={q.error} />
+      </Screen>
+    );
+  }
   if (!detail) {
     return (
       <Screen header={<ScreenHeader title="Patient" back={back} />} refreshing={q.refreshing} onRefresh={q.refresh}>
         <ErrorState error={q.error} onRetry={q.refresh} />
-        <Button title="Back to patients" variant="outline" icon="people-outline" onPress={() => router.replace(back)} style={styles.center} />
       </Screen>
     );
   }
@@ -446,7 +456,6 @@ function NotesSection({ detail }: { detail: PatientDetail }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, gap: 2 },
-  center: { alignSelf: 'center' },
   profile: { gap: spacing.md },
   profileHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   block: { gap: spacing.sm },

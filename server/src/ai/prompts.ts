@@ -25,9 +25,12 @@ How to answer
 ${SHARED_RULES}
 
 Safety
-- If <triage> reports an emergency or urgent concern, start with exactly what to do right now (call 911; call or text 988 for thoughts of suicide or self-harm; call Poison Help at 1-800-222-1222 for poisonings or overdoses) and keep the rest short.
+- If <triage> reports an emergency or urgent concern, start with exactly what to do right now (call 911; call or text 988 for thoughts of suicide or self-harm; call Poison Help at 1-800-222-1222 for poisonings or overdoses) and keep the rest short. The app already shows the triage title and message in a banner above your answer, so don't repeat them word for word.
+- <triage> comes from simple keyword rules and can miss things. Check every message yourself for a possible emergency, even when <triage> is missing or says level="info": chest pain or pressure now, stroke signs, severe trouble breathing, a severe allergic reaction, a seizure, heavy bleeding, thoughts or plans of suicide or self-harm, or someone having taken more medicine than directed (or a child swallowing medicine, a battery or a chemical). If you see one, lead with 911 / 988 / Poison Help 1-800-222-1222 before anything else.
+- If someone says they or someone else took more than the label or prescription says, don't give dosing or "missed dose" advice — direct them to Poison Help (1-800-222-1222) or 911.
+- Never give information about methods or means of self-harm or suicide, including amounts of a medicine that would be harmful; respond with care and point to 988 (call or text) and 911.
 - Don't diagnose. Describe possibilities in general terms and explain when and where to get care (911/ER, urgent care, or their doctor).
-- Medicines and dosing: explain what the FDA label says (uses, usual dosing ranges, warnings) in general terms. Never tell someone to start, stop, skip or change the dose of a prescription medicine — that decision belongs to their prescriber or pharmacist; say so kindly.
+- Medicines and dosing: explain what the FDA label says (uses, usual dosing ranges, warnings) in general terms, naming the product strength when directions count pills or tablets. Never tell someone to start, stop, skip or change the dose of a prescription medicine — that decision belongs to their prescriber or pharmacist; say so kindly.
 - Check the allergies, conditions and medicines in <patient_context> and point out any interaction, allergy or condition warning that applies to this person, citing the label. <label_findings> lists ones already found.
 - When explaining a doctor's note, keep the doctor's plan intact — don't second-guess it; turn doubts into questions for the doctor.
 
@@ -49,7 +52,7 @@ How to answer
 ${SHARED_RULES}
 
 Safety
-- If <triage> reports an emergency, mention the recommended immediate action first.
+- Clinical scenarios the clinician describes ("58M with crushing chest pain…", "pt with SI…") are the subject of the question: address evaluation and management with the evidence — don't tell the clinician to call 911 or 988. A <triage> block only appears when the clinician reports symptoms of their own; then lead with the immediate action.
 - Don't fabricate data or overstate certainty; say when the provided evidence is thin.`;
 
 export function systemPromptFor(input: Pick<ChatInput, 'role'>): string {
@@ -114,8 +117,13 @@ export function buildUserTurn(input: ChatInput, bundle: EvidenceBundle, today = 
 
   const triage = bundle.triage.triage;
   if (triage) {
+    // An info card is only a hint that the topic came up; the model still judges the message itself.
+    const note =
+      triage.level === 'info'
+        ? '\nRule-based hint only: the message mentions this topic but did not read as happening now. Judge the message yourself; if it describes a current emergency, treat it as one.'
+        : '';
     parts.push(
-      `<triage level="${triage.level}">\n${triage.title}: ${triage.message}\nActions shown to the user: ${triage.actions.map((a) => a.label + (a.phone ? ` (${a.phone})` : '')).join('; ')}\n</triage>`,
+      `<triage level="${triage.level}">\n${triage.title}: ${triage.message}\nActions shown to the user: ${triage.actions.map((a) => a.label + (a.phone ? ` (${a.phone})` : '')).join('; ')}${note}\n</triage>`,
     );
   }
 

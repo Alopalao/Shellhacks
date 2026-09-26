@@ -157,6 +157,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     s.on('disconnect', (reason) => {
       if (disposed) return;
       setConn((c) => ({ ...c, status: 'reconnecting' }));
+      // Presence is only known while connected; `connect` re-queries every watched id.
+      presence.clear();
       // The server closed the connection deliberately; socket.io won't retry on its own.
       if (reason === 'io server disconnect') setTimeout(() => !disposed && s.connect(), 1_000);
     });
@@ -183,6 +185,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       s.removeAllListeners();
       s.io.removeAllListeners();
       s.disconnect();
+      presence.clear(); // stale once the server URL or session changes
     };
   }, [authStatus, token, url, ready, presence]);
 
@@ -242,11 +245,21 @@ export function useSocketEvent<E extends ServerEventName>(event: E, handler: Ser
 }
 
 /**
+ * True once the realtime connection has been lost (or rejected): presence can't be known then, so
+ * the presence hooks report everyone as offline instead of a stale "online" (from the store or a
+ * REST `fallback`) until the socket is back and has re-queried.
+ */
+function presenceUnknown(status: SocketStatus): boolean {
+  return status === 'reconnecting' || status === 'unauthorized';
+}
+
+/**
  * Live online status for one user. Seeded with `presence:query` on mount/reconnect and kept up to
  * date by `presence` events. `fallback` (e.g. `dashboard.doctorOnline`) is used until the socket answers.
+ * Always false while the connection is lost.
  */
 export function usePresence(userId: string | null | undefined, fallback = false): boolean {
-  const { socket, connected, presence } = useSocketContext();
+  const { socket, connected, status, presence } = useSocketContext();
   const online = useSyncExternalStore(
     presence.subscribe,
     () => (userId ? presence.get(userId)?.online : undefined),
@@ -259,18 +272,21 @@ export function usePresence(userId: string | null | undefined, fallback = false)
   useEffect(() => {
     if (socket && connected && userId) queryPresence(socket, presence, [userId]);
   }, [socket, connected, userId, presence]);
+  if (presenceUnknown(status)) return false;
   return online ?? fallback;
 }
 
 /**
  * Live online status for many users (e.g. the doctor's patient list).
  * Returns `{ [userId]: boolean }`; ids the socket hasn't reported use `fallback[userId] ?? false`.
+ * Everyone is reported offline while the connection is lost.
  */
 export function usePresenceMap(
   userIds: readonly string[],
   fallback?: Readonly<Record<string, boolean>>,
 ): Record<string, boolean> {
-  const { socket, connected, presence } = useSocketContext();
+  const { socket, connected, status, presence } = useSocketContext();
+  const unknown = presenceUnknown(status);
   const snapshot = useSyncExternalStore(presence.subscribe, presence.snapshot, presence.snapshot);
   const idsKey = [...new Set(userIds)].sort().join('|');
   useEffect(() => {
@@ -284,8 +300,8 @@ export function usePresenceMap(
   return useMemo(() => {
     const out: Record<string, boolean> = {};
     for (const id of idsKey ? idsKey.split('|') : []) {
-      out[id] = snapshot.get(id)?.online ?? fallback?.[id] ?? false;
+      out[id] = !unknown && (snapshot.get(id)?.online ?? fallback?.[id] ?? false);
     }
     return out;
-  }, [snapshot, idsKey, fallback]);
+  }, [snapshot, idsKey, fallback, unknown]);
 }

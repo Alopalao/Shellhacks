@@ -53,7 +53,7 @@ export const lessons: Lesson[] = [
             "Ask: 'Are you board certified, and by which board?' For some face and eye procedures, surgeons certified in related specialties, such as ear-nose-throat or eye surgery, may also be well trained.",
             "Verify the answer on the certifying board's website, and check your state medical board for license status and any discipline.",
             'Ask how often they perform your exact procedure, and look at before-and-after photos of their own patients.',
-            "Ask whether they have privileges to do this procedure at a nearby hospital. Hospitals review a surgeon's training before allowing them to operate there.",
+            "Ask whether they have privileges, meaning permission, to do this procedure at a nearby hospital. Hospitals review a surgeon's training before granting privileges.",
           ),
         ),
       },
@@ -77,10 +77,11 @@ export const lessons: Lesson[] = [
           'You can lower your risk:',
           bullets(
             'Share your full health history and every medicine and supplement you take. Some raise bleeding risk.',
-            'Stop smoking and all nicotine, including vaping, gum, and patches, for as long as your surgeon advises, often several weeks before and after surgery. Nicotine narrows blood vessels and slows healing.',
+            'Stop all nicotine, including smoking, vaping, gum, and patches, for as long as your surgeon advises, often several weeks before and after surgery. Nicotine slows healing.',
             'Follow instructions about eating, drinking, and medicines before surgery.',
           ),
           '**Call 911** for chest pain, trouble breathing, or coughing up blood. Call your surgeon right away for a fever, spreading redness, pus, worsening pain, or swelling in one leg.',
+          "**Considering breast implants?** The FDA says they aren't lifetime devices, so plan for more surgery and cost later. They're linked to a rare immune-system cancer (BIA-ALCL), more often with textured implants, and some people report fatigue, joint pain, or 'brain fog.' Silicone implants need MRI or ultrasound checks for silent leaks. Ask for the FDA's patient decision checklist.",
         ),
       },
       {
@@ -179,9 +180,9 @@ export const lessons: Lesson[] = [
         url: 'https://www.plasticsurgery.org/news/articles/any-doctor-will-do-right-why-board-certification-matters-for-plastic-surgery',
       },
       {
-        title: 'What is Certification?',
-        publisher: 'American Board of Plastic Surgery (ABPS)',
-        url: 'https://www.abplasticsurgery.org/public/what-is-certification/',
+        title: 'Things to Consider Before Getting Breast Implants',
+        publisher: 'FDA',
+        url: 'https://www.fda.gov/medical-devices/breast-implants/things-consider-getting-breast-implants',
       },
       {
         title: 'Bounce back, babe? Why your plastic surgery recovery takes time',
@@ -215,6 +216,7 @@ export const lessons: Lesson[] = [
       'insurance',
       'medical tourism',
       'breast reconstruction',
+      'breast implants',
     ],
   },
 
@@ -376,7 +378,7 @@ export const lessons: Lesson[] = [
     title: 'Clearer Skin: How to Treat Acne',
     summary:
       'How over-the-counter benzoyl peroxide, salicylic acid, and adapalene work, how long to give them, when to see a dermatologist, and why isotretinoin needs close medical supervision.',
-    readMinutes: 4,
+    readMinutes: 5,
     level: 'Basics',
     icon: 'water-outline',
     callout: {
@@ -404,8 +406,9 @@ export const lessons: Lesson[] = [
           bullets(
             '**Benzoyl peroxide** (washes, gels, creams) kills acne-causing bacteria. It can bleach hair, towels, pillowcases, and clothes.',
             '**Salicylic acid** (washes, pads) helps unclog pores.',
-            '**Adapalene gel** is a retinoid sold without a prescription for ages 12 and up. It helps unclog pores and keeps new clogs from forming. It is usually applied once a day at bedtime.',
+            '**Adapalene gel** is a retinoid (a vitamin A-based medicine) sold without a prescription for ages 12 and up. It helps unclog pores and keeps new clogs from forming. It is usually applied once a day at bedtime.',
           ),
+          "If you're pregnant, trying to get pregnant, or breastfeeding, ask a doctor before using adapalene, and call your doctor if you become pregnant while using it.",
           'Dermatologists often suggest adapalene for blackheads and whiteheads, along with a benzoyl peroxide wash. For pimples, washing twice a day with a benzoyl peroxide or salicylic acid cleanser is a good start.',
           'Be patient. Acne may look worse during the first few weeks of adapalene, and its full benefit can take 8 to 12 weeks or longer.',
         ),
@@ -433,6 +436,7 @@ export const lessons: Lesson[] = [
             'Acne is hurting your mood or confidence.',
           ),
           'A dermatologist can prescribe stronger options, such as prescription retinoids, antibiotic creams or pills, and, for some women, hormone-based treatments like certain birth control pills. Procedures such as chemical peels or laser and light treatments may also help some people. Insurance often covers acne care as a medical condition, but coverage varies by plan.',
+          "**Be careful with dark-spot and 'skin lightening' creams.** The FDA says no over-the-counter skin-lightening product is FDA-approved or legally sold in the US. Some of these creams, often imported or sold online, contain mercury, which can cause mercury poisoning, or hydroquinone, which can cause rashes, facial swelling, and skin darkening that may be permanent. Ask a dermatologist about safe ways to fade dark spots.",
         ),
       },
       {
@@ -442,10 +446,20 @@ export const lessons: Lesson[] = [
           bullets(
             'It can cause severe birth defects and pregnancy loss. Anyone who can get pregnant must use two forms of birth control starting 1 month before, during, and for 1 month after treatment, and have regular pregnancy tests.',
             "You'll have regular check-ins with your prescriber, usually monthly.",
-            'Common side effects include very dry skin, lips, and eyes, and nosebleeds.',
-            'Tell your prescriber right away about mood changes, depression, or thoughts of hurting yourself. In a crisis, call or text **988**.',
             "Never share your pills, and don't donate blood during treatment or for 1 month after.",
             'Never buy isotretinoin online without a prescription.',
+          ),
+        ),
+      },
+      {
+        heading: 'Isotretinoin: side effects and warning signs',
+        body: md(
+          bullets(
+            'Common side effects include very dry skin, lips, and eyes, and nosebleeds.',
+            'Tell your prescriber right away about mood changes, depression, or thoughts of hurting yourself. In a crisis, call or text **988**.',
+            '**Stop taking it and call your prescriber or get emergency care right away** for a headache with blurred vision, nausea, or vomiting; chest pain, trouble breathing, or fainting; severe stomach pain or yellow skin or eyes; or a rash with peeling or blisters. **Call 911** for a seizure or severe trouble breathing.',
+            "Tell your prescriber about every medicine, vitamin, and supplement you take. Don't start vitamin A supplements or St. John's wort without asking first. St. John's wort can make hormonal birth control work less well.",
+            'Avoid waxing, laser treatments, and dermabrasion during treatment and for 6 months after. Isotretinoin raises the risk of scarring from them.',
           ),
         ),
       },
@@ -491,9 +505,9 @@ export const lessons: Lesson[] = [
         url: 'https://www.aad.org/public/diseases/acne/DIY/types-breakouts',
       },
       {
-        title: 'Acne: Diagnosis, Treatment, and Steps to Take',
-        publisher: 'NIH National Institute of Arthritis and Musculoskeletal and Skin Diseases (NIAMS)',
-        url: 'https://www.niams.nih.gov/health-topics/acne/diagnosis-treatment-and-steps-to-take',
+        title: 'FDA Warns Consumers of Skin Products Containing Mercury and/or Hydroquinone',
+        publisher: 'FDA',
+        url: 'https://www.fda.gov/consumers/health-fraud-scams/fda-warns-consumers-skin-products-containing-mercury-andor-hydroquinone',
       },
       {
         title: 'Adapalene',
@@ -527,6 +541,8 @@ export const lessons: Lesson[] = [
       'iPLEDGE',
       'dermatologist',
       'skin care',
+      'dark spots',
+      'skin lightening',
     ],
   },
 
@@ -717,7 +733,7 @@ export const lessons: Lesson[] = [
     icon: 'flash-outline',
     callout: {
       kind: 'warning',
-      text: 'Numbing creams can be dangerous. The FDA warns against over-the-counter products with more than 4% lidocaine, and against spreading numbing cream over large areas, on broken skin, or under plastic wrap. Too much can cause an irregular heartbeat, seizures, and trouble breathing. Use only what your provider gives you or approves.',
+      text: 'Numbing creams can be dangerous. The FDA warns against over-the-counter products with more than 4% lidocaine, and against spreading numbing cream over large areas, on broken skin, or under plastic wrap. Too much can cause an irregular heartbeat, seizures, and trouble breathing. Use only what your provider gives you or approves, and keep it away from children. Call 911 for a seizure, trouble breathing, fainting, or a racing or irregular heartbeat after using a numbing product. If you used too much or a child swallowed some, call Poison Help at 1-800-222-1222.',
     },
     sections: [
       {
@@ -772,7 +788,7 @@ export const lessons: Lesson[] = [
           'Wear a broad-spectrum, water-resistant sunscreen with SPF 30 or higher every day.',
           'Tell your provider about every medicine and supplement you take, including aspirin and isotretinoin (now or in the past). Mention any history of keloids or other raised scars, or cold sores.',
           'Wear the protective eyewear you are given. Everyone in the room needs eye protection during laser treatment.',
-          'Use numbing cream only as your provider directs.',
+          'Use numbing cream only as your provider directs, and keep it away from children.',
           'Afterward, follow your aftercare instructions and call your provider about blisters, oozing, severe pain, or signs of infection.',
         ),
       },
@@ -937,28 +953,28 @@ export const lessons: Lesson[] = [
             "**More isn't better:** Using extra won't speed results and can increase side effects.",
             "**Side effects:** Scalp itching, dryness, or flaking are most common. Don't apply it to a sunburned or irritated scalp.",
           ),
-          'Stop using it and call your doctor if you have chest pain, a racing heartbeat, lightheadedness, sudden weight gain, or swelling in your hands, feet, face, or belly.',
+          'Stop using it and call your doctor right away if you have a racing heartbeat, lightheadedness, sudden weight gain, swelling in your hands, feet, face, or belly, or trouble breathing when lying down. **Call 911** for chest pain, severe trouble breathing, or fainting.',
         ),
       },
       {
-        heading: 'Finasteride (prescription pill for men)',
+        heading: 'Finasteride (prescription pill, mainly for men)',
         body: md(
           'Finasteride is a daily pill for male pattern hair loss. It blocks a hormone in the scalp that shrinks hair follicles, which can slow hair loss and help some hair regrow.',
           bullets(
             '**Timeline:** Improvement takes at least 3 months, and a full year shows whether it is working.',
             '**Keep going:** Hair gained is usually lost within 12 months of stopping.',
-            '**Side effects:** Some men have lower sex drive or erection or ejaculation problems. Report breast changes or lumps, and tell your prescriber right away about depression or thoughts of self-harm. In a crisis, call or text **988**.',
-            '**Lab tests:** It lowers results on the PSA test used in prostate cancer screening, so tell your doctor you take it.',
-            "**Pregnancy:** It isn't for women. Anyone who is or may become pregnant should not touch crushed or broken tablets, because the medicine can harm a developing baby.",
+            '**Side effects:** Some men have lower sex drive or erection or ejaculation problems, which can continue after stopping. Report breast changes or lumps, and tell your prescriber right away about depression or thoughts of self-harm. In a crisis, call or text **988**.',
+            '**Lab tests:** It lowers PSA test results used in prostate cancer screening, so tell your doctor you take it.',
+            "**Women and pregnancy:** It's approved only for men, though dermatologists sometimes prescribe it for women who can't get pregnant. Anyone who is or may become pregnant shouldn't touch crushed or broken tablets, which can harm a developing baby.",
           ),
-          'The FDA has also warned that compounded finasteride sprays and solutions for the scalp are not FDA-approved and have been linked to side effects similar to the pill.',
+          'The FDA has also warned that compounded (custom-mixed by a pharmacy) finasteride sprays and solutions for the scalp are not FDA-approved and have been linked to similar side effects.',
         ),
       },
       {
         heading: 'Other options',
         body: md(
           bullets(
-            '**Spironolactone:** a prescription pill some dermatologists use for female pattern hair loss. How well it works varies.',
+            '**Spironolactone:** a prescription pill some dermatologists use for female pattern hair loss. How well it works varies. It can cause birth defects, so you must not get pregnant while taking it.',
             "**Low-dose minoxidil pills:** prescribed by some dermatologists 'off-label,' meaning for a use not listed on the FDA label. They need a prescriber's monitoring because they can affect blood pressure and heart rate.",
             '**Corticosteroid shots:** often used to regrow hair in alopecia areata patches.',
             '**Platelet-rich plasma (PRP):** injections made from your own blood, usually monthly for 3 months and then every 3 to 6 months. Research is still limited.',
@@ -972,7 +988,7 @@ export const lessons: Lesson[] = [
     keyTakeaways: [
       'Find the cause first; some hair loss signals a treatable health problem.',
       'Minoxidil takes at least 4 months to work and only works while you keep using it.',
-      'Finasteride is a prescription for men; watch for sexual and mood side effects.',
+      'Finasteride is a prescription pill, mainly for men; sexual side effects can sometimes last after stopping, and mood changes need prompt attention.',
       'Starting treatment early gives you the best chance of keeping your hair.',
     ],
     quiz: [
@@ -1061,7 +1077,7 @@ export const lessons: Lesson[] = [
     categoryId: 'cosmetic',
     title: 'Med Spa Safety Checklist',
     summary:
-      'Before you book injections, lasers, peels, or weight-loss shots at a medical spa, use this checklist to vet the people, the products, and the plan if something goes wrong.',
+      'Before you book injections, lasers, peels, body contouring, or weight-loss shots at a medical spa, use this checklist to vet the people, the products, and the plan if something goes wrong.',
     readMinutes: 5,
     level: 'Basics',
     icon: 'checkbox-outline',
@@ -1094,7 +1110,7 @@ export const lessons: Lesson[] = [
           bullets(
             "**FDA-approved products only.** Ask what product you'll get and whether it's FDA-approved for this use. For injections, ask to see the labeled box or vial and watch the dose being drawn up.",
             '**Licensed sources.** Products should come from licensed US distributors, not online sellers.',
-            "**Weight-loss shots.** GLP-1 medicines such as semaglutide or tirzepatide need a real medical evaluation and a prescription filled by a state-licensed pharmacy. The FDA warns that compounded versions aren't FDA-reviewed for safety or quality and have been linked to dosing errors and hospitalizations, and that counterfeit versions exist.",
+            "**Weight-loss shots.** GLP-1 medicines such as semaglutide (Ozempic, Wegovy) and tirzepatide (Mounjaro, Zepbound) need a real medical evaluation and a prescription. Ask whether you're getting an FDA-approved brand-name product. 'Compounded' versions, mixed by a pharmacy rather than made by the drug company, are not FDA-approved or reviewed for safety or quality, and the FDA has linked them to dosing errors and hospitalizations. Counterfeit versions also exist. Fill prescriptions only at a state-licensed pharmacy.",
             '**A clean, clinical space.** Look for fresh needles, hand washing or gloves, and eye protection during laser treatments.',
           ),
           "**Red flags:** unlabeled syringes, 'Botox parties' in homes, prices far below everyone else's, and pressure to buy a package today.",
@@ -1112,6 +1128,18 @@ export const lessons: Lesson[] = [
             'Have you sign a consent form only after answering all your questions.',
           ),
           'It also helps to ask yourself a few questions first: What do I want from this treatment? How much downtime and risk am I willing to accept? How much can I afford, including upkeep?',
+        ),
+      },
+      {
+        heading: 'Fat freezing and other body contouring',
+        body: md(
+          "Non-surgical body contouring uses cold, heat, light, sound waves, or magnetic fields to shrink small fat bulges, tone muscles, or smooth cellulite. The FDA notes that it doesn't treat obesity or cause weight loss, not everyone responds, results may be temporary, and you may need several sessions.",
+          bullets(
+            "**Fat freezing (cryolipolysis):** don't have it if you have a cold-sensitivity condition, such as Raynaud's disease or cold-induced hives. Rarely, the treated fat grows larger and hardens instead of shrinking, which may need surgery to fix.",
+            "**Radiofrequency (heat), ultrasound, and magnetic devices:** these shouldn't be used if you have a pacemaker or implanted defibrillator, or metal under the skin from an implant or injury. If you have an IUD, ask your doctor first.",
+            'Tell your provider about all your medicines, including isotretinoin in the past 6 months, and if you are pregnant or breastfeeding.',
+          ),
+          'Liposuction is surgery, not a med spa treatment. It belongs in an accredited surgical facility.',
         ),
       },
       {
@@ -1192,9 +1220,9 @@ export const lessons: Lesson[] = [
         url: 'https://www.plasticsurgery.org/patient-safety/how-to-choose-the-right-medical-spa-for-you',
       },
       {
-        title: 'Best questions to ask when considering a cosmetic treatment',
-        publisher: 'American Academy of Dermatology (AAD)',
-        url: 'https://www.aad.org/public/cosmetic/safety/ask-questions',
+        title: 'Non-Invasive Body Contouring Technologies',
+        publisher: 'FDA',
+        url: 'https://www.fda.gov/medical-devices/aesthetic-cosmetic-devices/non-invasive-body-contouring-technologies',
       },
       {
         title: 'How to Stay Safe When Getting Botulinum Toxin Injections',
@@ -1228,6 +1256,360 @@ export const lessons: Lesson[] = [
       'MedWatch',
       'weight-loss shots',
       'consultation',
+      'GLP-1',
+      'body contouring',
+      'fat freezing',
+      'CoolSculpting',
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // 8. LASIK & vision correction surgery
+  // ---------------------------------------------------------------------------
+  {
+    id: 'lasik-vision-correction-surgery',
+    categoryId: 'cosmetic',
+    title: 'LASIK and Other Vision Correction Surgery',
+    summary:
+      'Who is a good candidate for laser eye surgery, the real risks like dry eye and night glare, how to choose a surgeon, and what recovery and costs look like.',
+    readMinutes: 5,
+    level: 'Intermediate',
+    icon: 'eye-outline',
+    callout: {
+      kind: 'tip',
+      text: "LASIK is elective and permanent. Take your time, get a full eye exam, and be wary of '20/20 or your money back' ads and package deals. As the FDA puts it, there are never any guarantees in medicine.",
+    },
+    sections: [
+      {
+        heading: 'What LASIK does',
+        body: md(
+          'LASIK is laser eye surgery that reshapes the cornea, the clear front window of the eye, so light focuses better. It treats nearsightedness, farsightedness, and astigmatism. The surgeon makes a thin flap in the cornea, uses a laser to reshape the tissue underneath, and lays the flap back down. Your eye is numbed with drops, and the surgery usually takes less than 30 minutes.',
+          'Other laser surgeries work a bit differently. PRK reshapes the surface of the cornea without making a flap, so it may suit people with thin corneas or a very active job or lifestyle.',
+          "The goal is to need glasses or contacts less, not perfect vision. About 9 in 10 people end up seeing between 20/20 and 20/40 without glasses. LASIK can't prevent the normal need for reading glasses that starts around age 40.",
+        ),
+      },
+      {
+        heading: 'Are you a good candidate?',
+        body: md(
+          'An eye surgeon (ophthalmologist) should examine your eyes and measure your corneas before you decide. You may be a good candidate if:',
+          bullets(
+            "You're at least 18. No lasers are approved for LASIK in anyone younger, and vision is more likely to be stable after 21.",
+            "Your glasses or contact lens prescription hasn't changed in the past year.",
+            'Your corneas are thick enough, and your eyes are otherwise healthy.',
+          ),
+          'LASIK may not be right for you if you:',
+          bullets(
+            'Are pregnant or breastfeeding, or have diabetes that is not well controlled. These can make your vision change.',
+            'Have severe dry eye, thin or cone-shaped corneas (keratoconus), corneal scars, advanced glaucoma, or a cataract.',
+            'Have an autoimmune disease or a weak immune system, or take medicines, such as steroids, that can slow healing.',
+            "Play contact sports with blows to the face, or have a job that doesn't allow some eye surgeries. Check with your employer or military branch first.",
+          ),
+        ),
+      },
+      {
+        heading: 'Know the risks',
+        body: md(
+          'Most people are happy with their results, and serious problems are rare. Still, know the risks before you decide:',
+          bullets(
+            '**Dry eyes and changing vision:** almost everyone has these at first. They usually fade within about a month, but for some people they last longer or become permanent.',
+            '**Night vision problems:** glare, halos, or starbursts around lights, and trouble seeing in dim light or fog. People with large pupils may be at higher risk.',
+            '**Under- or over-correction:** you may still need glasses or contacts, or a second surgery.',
+            "**Rare but serious:** infection, problems with the flap, or vision loss that glasses or contacts can't fix, including, very rarely, blindness.",
+          ),
+          "If you're happy with your glasses or contacts, sticking with them is a perfectly good choice.",
+        ),
+      },
+      {
+        heading: 'Choosing a surgeon',
+        body: md(
+          "The FDA urges you to compare surgeons and not to choose based on price alone. Ask:",
+          steps(
+            'How many LASIK surgeries have you done with this laser, and what are your results, including complications?',
+            'Is the laser FDA-approved for my type and amount of vision problem?',
+            "Can I read the laser maker's patient information booklet?",
+            'Who will handle my checkups before and after surgery?',
+            'Should both eyes be done on the same day? It is convenient, but the FDA says it carries more risk than treating one eye at a time.',
+          ),
+          "Be wary of '20/20 or your money back' promises, package deals, and pressure to book fast. If you're considering monovision, where one eye is set for distance and the other for reading, try it with contact lenses first.",
+        ),
+      },
+      {
+        heading: 'Before and after surgery',
+        body: md(
+          steps(
+            'Stop wearing contact lenses before your first exam, because they change the shape of your cornea: soft lenses for 2 weeks, toric soft or rigid gas permeable lenses for at least 3 weeks, and hard lenses for at least 4 weeks.',
+            'Tell your surgeon about all your health conditions, eye problems, and medicines, including over-the-counter ones.',
+            'Skip creams, lotions, makeup, and perfume the day before surgery. They can raise the risk of infection.',
+            'Arrange a ride home, because your vision will be blurry.',
+            "Afterward, wear your eye shield as directed and don't rub your eye. Plan to take a few days off work.",
+            'Keep every follow-up visit, starting within 24 to 48 hours. Ask for a copy of your eye measurements, because you may need them for cataract surgery later.',
+          ),
+          "**Call your eye surgeon right away**, without waiting for your next visit, if you have severe pain or your vision or other symptoms get worse instead of better. If you can't reach them, go to an emergency room.",
+        ),
+      },
+      {
+        heading: 'Costs and insurance',
+        body: md(
+          "LASIK is elective, so most health insurance won't pay for it. Ask for a written price that covers the exam, surgery on each eye, follow-up visits, eye drops, and a touch-up surgery (called an enhancement) if your result falls short.",
+          'Be cautious with financing offers and deals that sound too good to be true. The FDA notes they usually are. This is general information, not financial advice.',
+        ),
+      },
+    ],
+    keyTakeaways: [
+      "LASIK reshapes the cornea to reduce the need for glasses or contacts, but it can't prevent needing reading glasses after about 40.",
+      'Good candidates are 18 or older, with a stable prescription and healthy corneas and eyes.',
+      'Dry eyes and night glare are common at first and can last for some people.',
+      "Compare experienced surgeons, and be wary of '20/20 or your money back' deals.",
+      "Most insurance won't pay, so get a written price that includes follow-up care and touch-ups.",
+    ],
+    quiz: [
+      {
+        question: 'Which person is most likely a good candidate for LASIK?',
+        options: [
+          'A 16-year-old who wants to stop wearing glasses',
+          'A 30-year-old with healthy eyes whose prescription has been stable for over a year',
+          'Someone whose prescription changed a lot in the past six months',
+          'Someone with severe dry eye',
+        ],
+        answerIndex: 1,
+        explanation:
+          'No lasers are approved for LASIK in people under 18. A stable prescription and healthy eyes matter, while changing vision and severe dry eye can lead to poor results.',
+      },
+      {
+        question: 'How long should you usually stop wearing soft contact lenses before your LASIK evaluation?',
+        options: ['There is no need to stop', 'About 2 weeks', 'One day', 'Six months'],
+        answerIndex: 1,
+        explanation:
+          'Contact lenses change the shape of the cornea. The FDA advises stopping soft lenses for 2 weeks, and rigid or hard lenses for 3 to 4 weeks or more, so the measurements are accurate.',
+      },
+      {
+        question: "What's a realistic expectation after LASIK?",
+        options: [
+          'Guaranteed 20/20 vision for life',
+          'Never needing reading glasses as you age',
+          'Some dry eye and glare at first, which usually improve',
+          'No follow-up visits',
+        ],
+        answerIndex: 2,
+        explanation:
+          'Dry eyes, glare, and halos are common early on and usually improve, though they can last for some people. No one can guarantee 20/20 vision, and most people need reading glasses after about 40.',
+      },
+    ],
+    sources: [
+      {
+        title: 'When is LASIK not for me?',
+        publisher: 'FDA',
+        url: 'https://www.fda.gov/medical-devices/lasik/when-lasik-not-me',
+      },
+      {
+        title: 'What are the risks and how can I find the right doctor for me?',
+        publisher: 'FDA',
+        url: 'https://www.fda.gov/medical-devices/lasik/what-are-risks-and-how-can-i-find-right-doctor-me',
+      },
+      {
+        title: 'What should I expect before, during, and after surgery?',
+        publisher: 'FDA',
+        url: 'https://www.fda.gov/medical-devices/lasik/what-should-i-expect-during-and-after-surgery',
+      },
+      {
+        title: 'LASIK — Laser Eye Surgery',
+        publisher: 'American Academy of Ophthalmology',
+        url: 'https://www.aao.org/eye-health/treatments/lasik',
+      },
+      {
+        title: 'What Is Photorefractive Keratectomy (PRK)?',
+        publisher: 'American Academy of Ophthalmology',
+        url: 'https://www.aao.org/eye-health/treatments/photorefractive-keratectomy-prk',
+      },
+    ],
+    askBrianPrompts: [
+      'Am I likely to be a good candidate for LASIK?',
+      "What's the difference between LASIK and PRK?",
+      'What questions should I ask a LASIK surgeon?',
+    ],
+    tags: [
+      'LASIK',
+      'laser eye surgery',
+      'vision correction',
+      'refractive surgery',
+      'PRK',
+      'nearsighted',
+      'dry eye',
+      'ophthalmologist',
+      'eye surgery',
+      'contact lenses',
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
+  // 9. Cosmetic dentistry: veneers, bonding, clear aligners
+  // ---------------------------------------------------------------------------
+  {
+    id: 'cosmetic-dentistry-veneers-aligners',
+    categoryId: 'cosmetic',
+    title: 'Cosmetic Dentistry: Veneers, Bonding, and Clear Aligners',
+    summary:
+      "How bonding, veneers, crowns, and clear aligners can change your smile, which choices are permanent, the risks of mail-order aligners and unlicensed 'veneer technicians,' and what insurance may cover.",
+    readMinutes: 4,
+    level: 'Basics',
+    icon: 'star-outline',
+    callout: {
+      kind: 'tip',
+      text: 'Start with a dental checkup. A dentist should treat cavities or gum disease before any cosmetic work, because veneers placed over unhealthy teeth can make problems worse.',
+    },
+    sections: [
+      {
+        heading: 'Your options at a glance',
+        body: md(
+          bullets(
+            '**Bonding:** the dentist attaches tooth-colored material directly to a tooth to repair chips, close small gaps, or cover stains. Unlike veneers, it usually needs little or no enamel removed.',
+            '**Veneers:** thin, custom-made shells that cover the front of a tooth to hide chips, stains, gaps, or crooked or uneven shapes.',
+            '**Crowns:** caps that cover the whole tooth. They are often used for teeth that are weak, broken, badly discolored, or badly shaped.',
+            '**Braces or clear aligners:** slowly move teeth into better positions to fix crooked or crowded teeth and bite problems.',
+          ),
+          'Ask your dentist which option fits your teeth and your goals. Sometimes whitening, or doing less, is enough.',
+        ),
+      },
+      {
+        heading: 'Veneers: a permanent choice',
+        body: md(
+          '**Porcelain veneers** are strong, long-lasting, and natural-looking, and they usually cost more. **Composite veneers** are made of tooth-colored filling material. They may need less enamel removed and fewer visits, and they are easier to repair, but they stain and wear more easily.',
+          'Before you commit:',
+          bullets(
+            "**It's not reversible.** Enamel is removed to place veneers, and enamel doesn't grow back.",
+            'Veneers can chip, crack, wear down, or come loose over time and may need to be repaired or replaced.',
+            'They may not be a good choice if you clench or grind your teeth or have a deep overbite.',
+            'You can still get cavities under or around a veneer, so keep brushing twice a day with fluoride toothpaste and cleaning between your teeth.',
+          ),
+        ),
+      },
+      {
+        heading: 'Only trust a licensed dentist',
+        body: md(
+          "Some people who call themselves 'veneer technicians' offer veneers without a dentist. The American Dental Association warns that veneers placed by unlicensed people can cause infection and nerve damage, and may be put over teeth that have decay or gum disease. Check that your provider is licensed to practice dentistry in your state before you commit.",
+          'Wherever you go, ask:',
+          steps(
+            'Are my teeth and gums healthy enough for this?',
+            'How much of my natural tooth will be removed?',
+            'How long should this last, and what will repairs or replacements cost?',
+            'Can I see before-and-after photos of your own patients?',
+          ),
+        ),
+      },
+      {
+        heading: 'Clear aligners and braces',
+        body: md(
+          'Healthy teeth can be straightened at any age. Clear aligners are thin plastic trays custom-made for your mouth. Each set is usually worn for about a week, at least 22 hours a day, and moves your teeth a tiny bit at a time. You take them out to eat or drink and to brush and floss.',
+          bullets(
+            'Aligners are not right for every case. Some problems are treated more predictably with braces, or with both.',
+            'Mild soreness is common for the first few days.',
+            'Treatment with braces usually takes 1 to 3 years. Afterward, you wear a retainer to keep teeth from shifting back.',
+            'Dental plans with orthodontic coverage usually cover braces and clear aligners the same way, but plans vary.',
+          ),
+        ),
+      },
+      {
+        heading: 'Be careful with mail-order aligners',
+        body: md(
+          'Some companies sell aligners directly to consumers, with little or no in-person care from a dentist. The American Dental Association warns that moving teeth without a full exam can lead to bone loss, lost teeth, receding gums, bite problems, jaw pain, and other permanent damage. Fixing those problems can cost more than regular dental care.',
+          bullets(
+            "Get an in-person exam with X-rays from a dentist or orthodontist before any teeth straightening. X-rays can't be done at home.",
+            'Choose treatment that includes regular in-person checkups.',
+            'If a mail-order company shut down during your treatment, a local dentist or orthodontist can help you finish.',
+          ),
+        ),
+      },
+      {
+        heading: 'Costs and insurance',
+        body: md(
+          "Veneers and bonding done to improve how teeth look are considered cosmetic, so dental insurance usually won't pay unless the work is medically necessary. Ask for a written estimate that lists every tooth, any temporary veneers, and likely repair or replacement costs over time.",
+          'Be cautious about traveling abroad for cheaper veneers or crowns. As with surgery abroad, follow-up care is hard to arrange, and fixing problems back home can be costly and may not be covered. This is general information, not financial advice.',
+        ),
+      },
+    ],
+    keyTakeaways: [
+      'See a dentist first. Cavities and gum disease need treatment before cosmetic work.',
+      'Veneers are permanent because enamel is removed, and they may need repair or replacement over time.',
+      "Only a licensed dentist should place veneers. Avoid unlicensed 'veneer technicians.'",
+      'Clear aligners are worn at least 22 hours a day, and a retainer keeps results in place.',
+      'Get an in-person exam with X-rays before any teeth straightening, including mail-order aligners.',
+    ],
+    quiz: [
+      {
+        question: 'Why is getting veneers a permanent decision?',
+        options: [
+          'Veneers can never chip or break',
+          "Enamel is removed from your teeth to place them, and it doesn't grow back",
+          'Veneers stop your teeth from growing',
+          'Insurance requires you to keep them',
+        ],
+        answerIndex: 1,
+        explanation:
+          'Placing veneers removes some enamel, so the treatment is not reversible. Veneers can also chip, crack, or loosen and need repair or replacement over time.',
+      },
+      {
+        question: 'How many hours a day are clear aligners usually worn?',
+        options: ['Only at night', 'About 1 hour', 'At least 22 hours', 'Only on weekends'],
+        answerIndex: 2,
+        explanation:
+          'Aligners work by applying steady, gentle pressure. They are typically worn at least 22 hours a day and taken out only to eat, drink, brush, and floss.',
+      },
+      {
+        question: 'What should happen before you start straightening your teeth?',
+        options: [
+          'Order an at-home kit to save money',
+          'An in-person exam with X-rays by a dentist or orthodontist',
+          'Filing down your teeth',
+          'Nothing, because aligners work for everyone',
+        ],
+        answerIndex: 1,
+        explanation:
+          "Moving teeth without a full exam can lead to bone loss, lost teeth, receding gums, bite problems, and jaw pain. X-rays can't be done at home.",
+      },
+    ],
+    sources: [
+      {
+        title: 'Veneers',
+        publisher: 'American Dental Association (MouthHealthy)',
+        url: 'https://www.mouthhealthy.org/all-topics-a-z/veneers',
+      },
+      {
+        title: '8 Great Ways to Improve Your Smile',
+        publisher: 'American Dental Association (MouthHealthy)',
+        url: 'https://www.mouthhealthy.org/ways-to-improve-smile',
+      },
+      {
+        title: 'Do-it-yourself (DIY) Dentistry',
+        publisher: 'American Dental Association (MouthHealthy)',
+        url: 'https://www.mouthhealthy.org/all-topics-a-z/diy-dentistry',
+      },
+      {
+        title: 'Braces',
+        publisher: 'American Dental Association (MouthHealthy)',
+        url: 'https://www.mouthhealthy.org/all-topics-a-z/braces',
+      },
+      {
+        title: 'Clear Aligners',
+        publisher: 'American Association of Orthodontists',
+        url: 'https://aaoinfo.org/treatments/aligners/',
+      },
+    ],
+    askBrianPrompts: [
+      'Should I choose bonding, veneers, or a crown for a chipped front tooth?',
+      'Are clear aligners or braces a better fit for my teeth?',
+      'What should I ask a dentist before getting veneers?',
+    ],
+    tags: [
+      'veneers',
+      'bonding',
+      'crowns',
+      'clear aligners',
+      'Invisalign',
+      'braces',
+      'orthodontist',
+      'cosmetic dentistry',
+      'mail-order aligners',
+      'dentist',
     ],
   },
 ];

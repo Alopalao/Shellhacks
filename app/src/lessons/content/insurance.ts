@@ -17,6 +17,7 @@ export const lessons: Lesson[] = [
   {
     id: 'insurance-vocabulary',
     categoryId: 'insurance',
+    lastReviewed: '2026-09',
     title: 'Health Insurance Words, Decoded',
     summary:
       'Premium, deductible, copay, coinsurance, and out-of-pocket maximum — what they mean and how they add up to what you actually pay.',
@@ -176,6 +177,7 @@ export const lessons: Lesson[] = [
   {
     id: 'insurance-plan-types',
     categoryId: 'insurance',
+    lastReviewed: '2026-09',
     title: 'HMO, PPO, EPO, POS, and HDHP Explained',
     summary:
       'Plan types set the rules for which doctors you can see, whether you need referrals, and how you share costs. Here is how to compare them.',
@@ -322,6 +324,7 @@ export const lessons: Lesson[] = [
   {
     id: 'hsa-vs-fsa-accounts',
     categoryId: 'insurance',
+    lastReviewed: '2026-09',
     title: 'HSA vs. FSA: Tax-Free Money for Health Costs',
     summary:
       'Both accounts let you pay medical costs with pre-tax money, but they work very differently. Learn which one fits you.',
@@ -336,7 +339,7 @@ export const lessons: Lesson[] = [
       {
         heading: 'What both accounts do',
         body: md(
-          "Health Savings Accounts (HSAs) and health Flexible Spending Accounts (FSAs) let you set aside money **before taxes** to pay for qualified medical costs. Because you don't pay income tax on that money, you effectively get a discount on care.",
+          "Health Savings Accounts (HSAs) and health Flexible Spending Accounts (FSAs) let you set aside money **before taxes** to pay for qualified medical costs. Because you don't pay federal income tax on that money, you effectively get a discount on care. Most states give the same break, but a few don't — California and New Jersey, for example, tax HSA contributions and earnings.",
           'You can typically use either account for:',
           bullets(
             'Deductibles, copays, and coinsurance',
@@ -344,7 +347,7 @@ export const lessons: Lesson[] = [
             'Many dental and vision costs, like cleanings, glasses, and contacts',
             'Medical supplies and equipment, like bandages, crutches, and blood sugar test kits',
           ),
-          'Neither account can generally be used to pay your regular health insurance premiums.',
+          "FSA money generally can't pay insurance premiums. HSA money usually can't either, with some exceptions: COBRA, health coverage while you get unemployment benefits, some long-term care insurance, and Medicare premiums (but not Medigap) once you're 65 or older.",
         ),
       },
       {
@@ -355,7 +358,7 @@ export const lessons: Lesson[] = [
           bullets(
             "**You own it.** The money stays yours if you change jobs or plans.",
             "**It rolls over.** There's no “use it or lose it” — unused money carries over every year.",
-            '**It can grow.** Balances can earn interest or investment returns, tax-free.',
+            '**It can grow.** Balances can earn interest or investment returns, free of federal tax.',
             '**Tax-free withdrawals** when you use the money for qualified medical costs.',
           ),
           'You can open an HSA through an employer or on your own at many banks and other financial institutions. Employers may contribute, too.',
@@ -366,11 +369,12 @@ export const lessons: Lesson[] = [
         body: md(
           'Contribution limits are set each year, and money your employer adds counts toward them:',
           bullets(
-            '**2026:** up to $4,400 for self-only coverage, or $8,750 for family coverage',
+            '**2026:** up to $4,400 for self-only coverage (a plan that covers just you), or $8,750 for family coverage',
             '**2027:** up to $4,500 for self-only coverage, or $9,000 for family coverage',
             "If you're 55 or older, you can add an extra $1,000 a year.",
           ),
           "If you withdraw HSA money for something that isn't a qualified medical cost, you'll owe income tax on it, plus an **extra 20% tax** unless you're 65 or older or disabled.",
+          "**Working past 65?** Stop HSA contributions (yours and your employer's) **6 months before** you apply for Medicare or Social Security. Medicare Part A can be backdated up to 6 months, and HSA money added during that time counts as an excess contribution that can be taxed.",
           'Keep receipts for HSA purchases in case the IRS asks.',
         ),
       },
@@ -380,7 +384,7 @@ export const lessons: Lesson[] = [
           "A health FSA is offered **through an employer**. You choose how much to put in, usually during open enrollment, and it's taken from your paychecks before taxes.",
           'Key features:',
           bullets(
-            '**Limit:** up to $3,400 per employer for 2026. A spouse with their own job can have a separate FSA.',
+            '**Limit:** up to $3,400 per employer for 2026 (the IRS updates this each year). A spouse with their own job can have a separate FSA.',
             "**Money is available early.** You can use your full yearly amount at any point in the plan year, even before it's all been taken from your pay.",
             '**Use it or lose it.** Money left at the end of the plan year is generally lost. Your employer may offer either a grace period of up to 2½ months or a carryover (up to $680 for 2026 plans) — not both, and they don’t have to offer either.',
             "You usually can't keep your FSA if you leave your job.",
@@ -478,6 +482,11 @@ export const lessons: Lesson[] = [
         publisher: 'IRS',
         url: 'https://www.irs.gov/newsroom/irs-releases-tax-inflation-adjustments-for-tax-year-2026-including-amendments-from-the-one-big-beautiful-bill',
       },
+      {
+        title: 'Working past 65',
+        publisher: 'Medicare.gov',
+        url: 'https://www.medicare.gov/basics/get-started-with-medicare/medicare-basics/working-past-65',
+      },
     ],
     askBrianPrompts: [
       "Should I choose an HSA or an FSA with my employer's plans?",
@@ -502,6 +511,7 @@ export const lessons: Lesson[] = [
   {
     id: 'medicare-medicaid-basics',
     categoryId: 'insurance',
+    lastReviewed: '2026-09',
     title: 'Medicare and Medicaid: The Basics',
     summary:
       'Two public programs with similar names but different purposes. Learn who qualifies, what each covers, and the deadlines that matter.',
@@ -539,9 +549,11 @@ export const lessons: Lesson[] = [
         body: md(
           'Your **Initial Enrollment Period** lasts 7 months. It starts 3 months before the month you turn 65, includes your birthday month, and ends 3 months after.',
           bullets(
-            "If you already get Social Security benefits, you're usually enrolled in Parts A and B automatically, and your card arrives in the mail.",
+            "If you already get Social Security benefits, you're usually enrolled in Parts A and B automatically.",
             "If you don't, you sign up through Social Security.",
-            'If you or your spouse are still working and have job-based coverage, you may be able to delay Part B without a penalty. Check the rules before you decide.',
+            'If you or your spouse are still working and have health coverage from that job, you can usually delay Part B without a penalty and sign up within 8 months after the job or coverage ends.',
+            "At employers with **fewer than 20 employees**, Medicare usually pays first, so the job plan may pay little without Part B. **COBRA and retiree coverage don't count** as current-job coverage. Ask the benefits office first.",
+            'Have an HSA? Stop contributions 6 months before you sign up, since Part A can be backdated up to 6 months.',
           ),
           "Missing your window can mean a **late enrollment penalty** that lasts as long as you have Part B, plus a wait for coverage. Part D has its own late penalty.",
         ),
@@ -549,11 +561,11 @@ export const lessons: Lesson[] = [
       {
         heading: 'What Medicare costs in 2026',
         body: md(
-          'Costs change every year. For 2026, in Original Medicare:',
+          'Costs change every January, so check Medicare.gov for the current amounts. For 2026, in Original Medicare:',
           bullets(
             '**Part B premium:** $202.90 a month for most people (more if your income is higher)',
-            '**Part B deductible:** $283 a year. After that, you usually pay **20%** of the Medicare-approved amount.',
-            '**Part A hospital deductible:** $1,736 for each benefit period',
+            '**Part B deductible:** $283 a year. After that, you usually pay **20%** of the Medicare-approved amount (the price Medicare sets for a covered service).',
+            "**Part A hospital deductible:** $1,736 for each benefit period. A benefit period starts when you're admitted and ends once you've gone 60 days in a row without hospital or skilled nursing care, so you could pay this more than once a year.",
           ),
           'Original Medicare has **no yearly out-of-pocket limit**, which is why many people add a Medigap policy or choose Medicare Advantage.',
           'In Part D drug plans, your out-of-pocket costs for covered drugs are capped at **$2,100 in 2026** ($2,400 in 2027).',
@@ -675,10 +687,11 @@ export const lessons: Lesson[] = [
   {
     id: 'aca-marketplace-enrollment',
     categoryId: 'insurance',
+    lastReviewed: '2026-09',
     title: 'The ACA Marketplace: When and How to Enroll',
     summary:
       "How to shop for your own health plan on HealthCare.gov or your state's marketplace, key deadlines, and how to lower your costs.",
-    readMinutes: 4,
+    readMinutes: 5,
     level: 'Basics',
     icon: 'calendar-outline',
     callout: {
@@ -738,14 +751,26 @@ export const lessons: Lesson[] = [
         ),
       },
       {
+        heading: 'Losing job-based coverage: COBRA or the Marketplace?',
+        body: md(
+          'When you leave a job, your former employer may offer **COBRA**, which lets you keep the same plan for a limited time (often up to 18 months). You usually pay the **full premium yourself**, plus up to 2%, so it often costs much more than you paid while working.',
+          'Before you decide:',
+          bullets(
+            'Compare COBRA with Marketplace plans. You may qualify for tax credits that make a Marketplace plan cost less.',
+            'You can apply for a Marketplace plan up to 60 days before and 60 days after your job-based coverage ends.',
+            "**Careful:** if you choose COBRA and then drop it early or stop paying, that generally doesn't qualify you for a Special Enrollment Period. You'd have to wait until the next Open Enrollment to switch.",
+          ),
+        ),
+      },
+      {
         heading: 'Lowering your costs',
         body: md(
           'Savings are based on your household size and your expected income for the year you want coverage:',
           bullets(
-            "**Premium tax credits** lower your monthly premium. You generally qualify if your household income is between 100% and 400% of the federal poverty level and you can't get affordable coverage through a job. You can use the credit in advance or claim it at tax time.",
+            "**Premium tax credits** lower your monthly premium. You generally qualify if your household income is between 100% and 400% of the federal poverty level (for 2027 coverage, about $15,960 to $63,840 a year for one person, and more for bigger households) and you can't get affordable coverage through a job. You can use the credit in advance or claim it at tax time.",
             '**Cost-sharing reductions** lower your deductible, copays, and out-of-pocket maximum — but **only if you choose a Silver plan**.',
           ),
-          'If your income or household changes during the year, update your application. If you take more tax credit in advance than you qualify for, you may have to pay some back when you file your taxes.',
+          "If your income or household changes during the year, update your application right away. Starting with 2026 coverage, there's **no limit** on paying back extra tax credits: if you get more in advance than you qualify for, you must repay the full difference when you file your federal tax return.",
         ),
       },
       {
@@ -764,8 +789,9 @@ export const lessons: Lesson[] = [
     ],
     keyTakeaways: [
       'Open Enrollment on HealthCare.gov runs November 1 to January 15; enroll by December 15 for January 1 coverage.',
-      'Life events like losing coverage, marriage, a new baby, or moving usually give you 60 days to enroll.',
+      "Life events like losing coverage, marriage, a new baby, or moving usually give you 60 days to enroll. Dropping COBRA early doesn't count.",
       'Premium tax credits lower premiums; cost-sharing reductions require a Silver plan.',
+      'Report income changes quickly. From 2026 on, you must repay all extra advance tax credits at tax time.',
       "Marketplace plans can't turn you down or charge you more for a pre-existing condition.",
     ],
     quiz: [
@@ -786,7 +812,7 @@ export const lessons: Lesson[] = [
         ],
         answerIndex: 2,
         explanation:
-          'Losing coverage is a qualifying life event. You usually have 60 days to pick a Marketplace plan.',
+          "Losing job-based coverage is a qualifying life event. You usually have 60 days to pick a Marketplace plan. Compare it with any COBRA offer first, since dropping COBRA later generally won't let you switch until Open Enrollment.",
       },
       {
         question: 'To get cost-sharing reductions (lower deductibles and copays), which plan level must you choose?',
@@ -813,9 +839,9 @@ export const lessons: Lesson[] = [
         url: 'https://www.healthcare.gov/choose-a-plan/plans-categories/',
       },
       {
-        title: 'Premium tax credit - Glossary',
-        publisher: 'HealthCare.gov',
-        url: 'https://www.healthcare.gov/glossary/premium-tax-credit/',
+        title: 'Questions and answers on the Premium Tax Credit',
+        publisher: 'IRS',
+        url: 'https://www.irs.gov/affordable-care-act/individuals-and-families/questions-and-answers-on-the-premium-tax-credit',
       },
       {
         title: 'Marketplace health plans cover pre-existing conditions',
@@ -824,7 +850,7 @@ export const lessons: Lesson[] = [
       },
     ],
     askBrianPrompts: [
-      'Do I qualify for a Special Enrollment Period if I move to a new state?',
+      'Should I take COBRA or switch to a Marketplace plan after losing my job?',
       'How do premium tax credits work if my income changes during the year?',
       'Should I choose a Bronze or a Silver plan?',
     ],
@@ -839,6 +865,8 @@ export const lessons: Lesson[] = [
       'cost-sharing reductions',
       'metal levels',
       'pre-existing conditions',
+      'COBRA',
+      'job loss',
     ],
   },
 
@@ -846,6 +874,7 @@ export const lessons: Lesson[] = [
   {
     id: 'medical-bills-eob-disputes',
     categoryId: 'insurance',
+    lastReviewed: '2026-09',
     title: 'Reading Your EOB and Fighting a Wrong Medical Bill',
     summary:
       'How to match your Explanation of Benefits to your bill, spot errors, use your No Surprises Act rights, and ask for financial help.',
@@ -909,8 +938,8 @@ export const lessons: Lesson[] = [
             "Non-emergency care from out-of-network providers at an in-network hospital, hospital outpatient department, or surgery center — like an anesthesiologist you didn't choose",
             'Air ambulance services',
           ),
-          "In these cases, you should owe no more than your in-network cost-sharing. Ground ambulances generally **aren't** covered by the federal law, though some states protect you.",
-          "Watch out: for some planned care, a provider may ask you to sign a “notice and consent” form that gives up these protections. Signing is your choice. If you don't sign, you may need to reschedule with an in-network provider.",
+          "In these cases, you should owe no more than your usual in-network share (your normal copay, coinsurance, and deductible). Ground ambulances generally **aren't** covered by the federal law, though some states protect you.",
+          "Watch out: for some planned care, an out-of-network provider may ask you to sign a “notice and consent” form that gives up these protections. Signing is your choice, and to stay in-network, don't sign. Emergency care providers, anesthesiologists, radiologists, pathologists, labs, neonatologists, assistant surgeons, hospitalists, and intensivists are **never allowed to ask**. Questions? Call the No Surprises Help Desk at 1-800-985-3059 before you sign.",
         ),
       },
       {
@@ -967,11 +996,11 @@ export const lessons: Lesson[] = [
           'Nothing — you must pay the full bill',
           'Medicare Part D',
           'Your car insurance',
-          'The No Surprises Act, which generally limits you to in-network cost-sharing',
+          'The No Surprises Act, which generally limits you to your usual in-network share',
         ],
         answerIndex: 3,
         explanation:
-          'The No Surprises Act covers out-of-network providers at in-network facilities for most people with health insurance, unless you gave up those protections by signing a notice and consent form.',
+          "The No Surprises Act protects most insured people from surprise bills by out-of-network providers at in-network facilities. Anesthesiologists, like emergency, radiology, pathology, and lab providers, aren't allowed to ask you to give up these protections, so you should owe only your usual in-network share.",
       },
       {
         question: "You're uninsured, and your bill is $600 more than the provider's Good Faith Estimate. What can you do?",
@@ -1036,6 +1065,7 @@ export const lessons: Lesson[] = [
   {
     id: 'prior-authorization-appeals',
     categoryId: 'insurance',
+    lastReviewed: '2026-09',
     title: 'Prior Authorization, Denials, and Appeals',
     summary:
       'What to do when your plan needs approval first — or says no. Step-by-step help with appeals and independent external review.',

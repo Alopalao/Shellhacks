@@ -1,0 +1,16 @@
+{
+  "name": "brian-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Live two-user (patient + doctor) end-to-end demo test for BRIAN, driven by Playwright.",
+  "scripts": {
+    "test": "node live-demo.spec.mjs",
+    "test:managed": "node live-demo.spec.mjs --managed",
+    "test:headed": "node live-demo.spec.mjs --headed",
+    "install-browser": "playwright install chromium"
+  },
+  "devDependencies": {
+    "playwright": "1.61.0"
+  }
+}

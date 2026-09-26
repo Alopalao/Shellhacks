@@ -32,7 +32,7 @@ import type {
   VisitNote,
 } from './contracts';
 import { todayKey } from './format';
-import { getServerUrl, normalizeServerUrl } from './server-url';
+import { getServerUrl, getServerUrlState, normalizeServerUrl } from './server-url';
 
 /** Default request timeout. */
 export const DEFAULT_TIMEOUT_MS = 20_000;
@@ -228,11 +228,15 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     if (options.signal?.aborted) {
       throw new ApiRequestError({ kind: 'aborted', status: 0, serverUrl: baseUrl, message: 'Request cancelled.' });
     }
+    const { source, detected } = getServerUrlState();
     throw new ApiRequestError({
       kind: 'network',
       status: 0,
       serverUrl: baseUrl,
-      message: `Can't reach the BRIAN server at ${baseUrl}. Make sure it's running (npm run server) and that this device is on the same network.`,
+      message:
+        source === 'tunnel' && baseUrl === detected
+          ? "This app was opened through an Expo tunnel, which can't reach the BRIAN server. Enter the server's public address in the server settings."
+          : `Can't reach the BRIAN server at ${baseUrl}. Make sure it's running (npm run server) and that this device is on the same network.`,
       details: cause,
     });
   }

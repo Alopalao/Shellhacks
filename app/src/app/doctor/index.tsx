@@ -1,9 +1,10 @@
 // Doctor home: the patient list with live presence, adherence, refills and unread messages.
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   AppText,
+  Button,
   Chip,
   EmptyState,
   ErrorState,
@@ -19,7 +20,6 @@ import {
   LOW_ADHERENCE,
   PatientCard,
   StatTile,
-  useActivityRecorder,
   useLiveEvents,
 } from '@/features/doctor';
 import { useApiQuery } from '@/hooks/useApiQuery';
@@ -30,7 +30,6 @@ import { useAuth } from '@/lib/auth';
 import type { PatientSummary } from '@/lib/contracts';
 import { formatDate, greeting, pluralize } from '@/lib/format';
 import { usePresenceMap } from '@/lib/socket';
-import { setTabBadge } from '@/lib/tab-badges';
 import { spacing } from '@/theme';
 
 type Filter = 'all' | 'online' | 'attention';
@@ -61,9 +60,6 @@ export default function DoctorPatientsScreen() {
   const { isWide } = useBreakpoint();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
-
-  // Record live activity for the Inbox feed from the moment the doctor lands here.
-  useActivityRecorder();
 
   const patientsQuery = useApiQuery(() => api.patients(), []);
   const summaries = useMemo(() => patientsQuery.data ?? [], [patientsQuery.data]);
@@ -98,10 +94,6 @@ export default function DoctorPatientsScreen() {
     }),
     [ids, presence, summaries],
   );
-
-  useEffect(() => {
-    if (patientsQuery.data) setTabBadge('doctor/inbox', totals.refills);
-  }, [patientsQuery.data, totals.refills]);
 
   const visible = summaries.filter(
     (s) =>
@@ -239,9 +231,20 @@ export default function DoctorPatientsScreen() {
       )}
 
       {patientsQuery.error ? (
-        <AppText variant="small" tone="muted" align="center">
-          Showing the last loaded list — pull to refresh when you're back online.
-        </AppText>
+        <View style={styles.stale}>
+          <AppText variant="small" tone="muted" align="center">
+            Showing the last loaded list — it refreshes automatically when you're back online.
+          </AppText>
+          <Button
+            title="Refresh now"
+            icon="refresh"
+            variant="ghost"
+            size="sm"
+            loading={patientsQuery.refreshing}
+            onPress={() => void patientsQuery.refresh()}
+            style={styles.centered}
+          />
+        </View>
       ) : null}
     </Screen>
   );
@@ -252,6 +255,8 @@ const styles = StyleSheet.create({
   controls: { gap: spacing.md },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   list: { gap: spacing.md },
+  stale: { gap: spacing.xs },
+  centered: { alignSelf: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   // Two columns; `maxWidth` keeps an odd last card at half width.
   gridItem: { flexBasis: '40%', flexGrow: 1, maxWidth: '49%' },

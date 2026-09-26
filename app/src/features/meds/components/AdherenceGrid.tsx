@@ -11,11 +11,13 @@ export interface AdherenceGridProps {
 
 /** Compact dose history: one row per reminder time, one column per day (oldest → today). */
 export function AdherenceGrid({ grid }: AdherenceGridProps) {
-  const { days, rows, taken, due, rate } = grid;
+  const { days, rows, taken, due, rate, tracked } = grid;
   const summary =
-    rate == null
-      ? 'No doses were due in the last 14 days.'
-      : `${taken} of ${due} doses logged in the last 14 days (${formatPercent(rate)}).`;
+    rate != null
+      ? `${taken} of ${due} doses logged in the last 14 days (${formatPercent(rate)}).`
+      : tracked
+        ? 'No doses were due in the last 14 days.'
+        : "Doses aren't counted while this medicine isn't active.";
   const first = days[0];
   const last = days[days.length - 1];
 
@@ -24,7 +26,7 @@ export function AdherenceGrid({ grid }: AdherenceGridProps) {
       <View style={styles.summaryRow}>
         <AppText variant="title2">{rate == null ? '—' : formatPercent(rate)}</AppText>
         <AppText variant="small" tone="muted" style={styles.flex}>
-          {rate == null ? 'Nothing due yet' : `${taken} of ${due} doses logged`}
+          {rate != null ? `${taken} of ${due} doses logged` : tracked ? 'Nothing due yet' : 'Not counted while this medicine isn’t active'}
         </AppText>
       </View>
       {rate != null ? (

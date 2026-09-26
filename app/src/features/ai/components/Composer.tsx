@@ -65,10 +65,14 @@ export function Composer({
 }: ComposerProps) {
   const [focused, setFocused] = useState(false);
   const [webHeight, setWebHeight] = useState(MIN_INPUT_HEIGHT);
+  const [webWidth, setWebWidth] = useState(0);
   const localRef = useRef<TextInput | null>(null);
   const ref = inputRef ?? localRef;
 
   // Web: grow/shrink the textarea with its content (native multiline inputs do this themselves).
+  // An empty textarea's scrollHeight covers its placeholder, so re-measure when the placeholder
+  // changes (mode switch) or the width changes (resize/rotation) — otherwise a wrapped
+  // placeholder is clipped at the one-line height.
   useLayoutEffect(() => {
     if (Platform.OS !== 'web') return;
     const node = ref.current as unknown as WebTextArea | null;
@@ -78,7 +82,7 @@ export function Composer({
     const next = clampHeight(node.scrollHeight);
     node.style.height = previous;
     setWebHeight(next);
-  }, [value, ref]);
+  }, [value, placeholder, webWidth, ref]);
   const canSend = !!value.trim() && !pending && !disabled;
   const nearLimit = value.length > MAX_QUESTION_LENGTH - 400;
 
@@ -107,6 +111,7 @@ export function Composer({
             onKeyPress={handleKeyPress}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
+            onLayout={Platform.OS === 'web' ? (event) => setWebWidth(Math.round(event.nativeEvent.layout.width)) : undefined}
             placeholder={placeholder}
             placeholderTextColor={colors.textSubtle}
             selectionColor={colors.black}
@@ -126,6 +131,7 @@ export function Composer({
           accessibilityRole="button"
           accessibilityLabel={pending ? 'Waiting for the answer' : 'Send question'}
           accessibilityState={{ disabled: !canSend, busy: pending }}
+          aria-busy={pending}
           style={({ pressed }) => [styles.send, !canSend && styles.sendDisabled, pressed && canSend && styles.sendPressed]}
         >
           {pending ? (

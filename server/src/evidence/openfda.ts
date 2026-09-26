@@ -45,7 +45,7 @@ export class OpenFdaClient {
   /** Best label for `name` (generic or brand). Tries exact generic, brand, substance, then RxCUI. */
   async findLabel(
     name: string,
-    options: { rxcui?: string | null; preferOtc?: boolean; form?: string | null } = {},
+    options: { rxcui?: string | null; preferOtc?: boolean; form?: string | null; extendedRelease?: boolean } = {},
   ): Promise<DrugLabel | null> {
     const term = sanitizeTerm(name);
     if (!term) return null;
@@ -61,12 +61,18 @@ export class OpenFdaClient {
       `openfda.generic_name:"${term}"`,
       `openfda.brand_name:"${term}"`,
     ];
+    const wantsExtended = options.extendedRelease ?? EXTENDED_WORDS.test(`${term} ${options.form ?? ''}`);
+    // A later, broader search may find the right release type (the exact-name hits for
+    // "metformin" are all extended-release): keep a mismatch only as the last resort.
+    let fallback: JsonRecord | null = null;
     for (const search of attempts) {
       const results = await this.query(search, 10);
-      const best = pickBestLabel(results, term, options.preferOtc ?? false, formWords(options.form));
-      if (best) return toDrugLabel(best);
+      const best = pickBestLabel(results, term, options.preferOtc ?? false, formWords(options.form), wantsExtended);
+      if (!best) continue;
+      if (isExtendedRelease(best) === wantsExtended) return toDrugLabel(best);
+      fallback ??= best;
     }
-    return null;
+    return fallback ? toDrugLabel(fallback) : null;
   }
 }
 
@@ -114,7 +120,37 @@ const USEFUL_FIELDS = [
 /** openFDA returns some scalar fields as strings and most as string arrays. */
 const scalar = (obj: unknown, key: string): string | null => str(obj, key) ?? firstString(obj, key);
 
-function scoreLabel(result: JsonRecord, term: string, preferOtc: boolean, formHint: string[] | null): number {
+/** A query or prescription that asks for the extended-release product. */
+const EXTENDED_WORDS = /\b(er|xr|xl|sr|cr|la|extended|sustained|controlled|8 ?hr|12 ?hr|24 ?hr)\b/i;
+/** Product text of an extended-release label ("Metformin … Extended-Release", "8 HR Arthritis Pain"). */
+const EXTENDED_PRODUCT = /extended[- ]release|sustained[- ]release|controlled[- ]release|\b8 ?hr\b|\b8[- ]hour\b|arthritis pain/i;
+const EXTENDED_ACRONYM = /\b(ER|XR|XL|SR|CR)\b/;
+
+/** Brand, generic, ingredient box and principal display panel text: what the product actually is. */
+function productText(result: JsonRecord, names: string[]): string {
+  return [
+    ...strings(result, 'spl_product_data_elements'),
+    ...strings(result, 'active_ingredient'),
+    ...strings(result, 'package_label_principal_display_panel').map((t) => t.slice(0, 400)),
+    ...strings(result, 'dosage_forms_and_strengths').map((t) => t.slice(0, 200)),
+    ...names,
+  ].join(' ');
+}
+
+/** Extended-, sustained- or controlled-release product (from its names, ingredient box, display panel or directions). */
+function isExtendedRelease(result: JsonRecord): boolean {
+  const openfda = rec(result, 'openfda');
+  const names = [...strings(openfda, 'brand_name'), ...strings(openfda, 'generic_name')];
+  const indications = strings(result, 'indications_and_usage').join(' ');
+  const directions = strings(result, 'dosage_and_administration').join(' ');
+  return (
+    EXTENDED_PRODUCT.test(`${productText(result, names)} ${indications}`) ||
+    EXTENDED_ACRONYM.test(`${names.join(' ')} ${strings(result, 'spl_product_data_elements').join(' ')}`) ||
+    /\bswallow\b[^.]{0,20}\bwhole\b[^.]{0,40}\b(do not|never) crush\b/i.test(directions)
+  );
+}
+
+function scoreLabel(result: JsonRecord, term: string, preferOtc: boolean, formHint: string[] | null, wantsExtended = false): number {
   const openfda = rec(result, 'openfda');
   if (!openfda) return -Infinity; // unharmonized labels lack names/links we need
   const lower = term.toLowerCase();
@@ -141,12 +177,13 @@ function scoreLabel(result: JsonRecord, term: string, preferOtc: boolean, formHi
   if (pediatricOnly) score -= 40;
   const indications = strings(result, 'indications_and_usage').join(' ');
   if (/\b(?:[0-9]|1[0-2]) (?:to|-) (?:[0-9]|1[0-2]) years of age\b/i.test(indications)) score -= 25;
-  // Prefer the standard (immediate-release) product unless the query names ER/XR.
-  if (/extended[- ]release|\bER\b|\bXR\b/i.test(`${indications} ${brands.join(' ')}`) && !/\b(er|xr|xl|extended)\b/i.test(term)) score -= 15;
-  if (formHint) {
-    const productText = [...strings(result, 'spl_product_data_elements'), ...brands, ...generics].join(' ').toLowerCase();
-    if (formHint.some((word) => productText.includes(word))) score += 10;
-  }
+  // Prefer the standard (immediate-release) product unless the query or prescription names ER/XR:
+  // a patient on metformin 500 mg twice daily must not get extended-release directions.
+  if (isExtendedRelease(result) !== wantsExtended) score -= 30;
+  const product = productText(result, [...brands, ...generics]);
+  if (formHint && formHint.some((word) => product.toLowerCase().includes(word))) score += 10;
+  // With no form given, not a liquid or injectable version (Riomet solution for "metformin").
+  if (!formHint && /\b(oral solution|oral suspension|for suspension|injection|syrup|elixir)\b/i.test(product)) score -= 15;
   if (preferOtc && productType.includes('OTC')) score += 8;
   if (!preferOtc && productType.includes('PRESCRIPTION')) score += 2;
   const effective = Number.parseInt(scalar(result, 'effective_time') ?? '0', 10);
@@ -154,11 +191,11 @@ function scoreLabel(result: JsonRecord, term: string, preferOtc: boolean, formHi
   return score;
 }
 
-function pickBestLabel(results: JsonRecord[], term: string, preferOtc: boolean, formHint: string[] | null): JsonRecord | null {
+function pickBestLabel(results: JsonRecord[], term: string, preferOtc: boolean, formHint: string[] | null, wantsExtended = false): JsonRecord | null {
   let best: JsonRecord | null = null;
   let bestScore = -Infinity;
   for (const result of results) {
-    const score = scoreLabel(result, term, preferOtc, formHint);
+    const score = scoreLabel(result, term, preferOtc, formHint, wantsExtended);
     if (score > bestScore) {
       best = result;
       bestScore = score;
@@ -186,6 +223,7 @@ function toDrugLabel(result: JsonRecord): DrugLabel {
     effectiveDate: scalar(result, 'effective_time'),
     rxcuis: strings(openfda, 'rxcui'),
     pharmClasses: strings(openfda, 'pharm_class_epc'),
+    strength: productStrength(result),
     sections,
     dailyMedUrl: setId
       ? `https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=${encodeURIComponent(setId)}`
@@ -194,6 +232,17 @@ function toDrugLabel(result: JsonRecord): DrugLabel {
 }
 
 const dedupe = (values: string[]): string[] => [...new Set(values.filter(Boolean))];
+
+/** "Active ingredient (in each caplet) Acetaminophen 500 mg" → "500 mg caplet"; "(in each 5 mL) … 160 mg" → "160 mg per 5 mL". */
+export function productStrength(result: JsonRecord): string | null {
+  const active = collapseWhitespace(strings(result, 'active_ingredient').join(' '));
+  const amount = active.match(/(\d[\d,]*(?:\.\d+)?)\s?(mg|mcg|g|%)(?![a-z])/i);
+  if (!amount) return null;
+  const unit = `${amount[1]} ${amount[2]!.toLowerCase()}`;
+  const each = active.match(/in each ([a-z0-9 .-]{2,40}?)\)/i)?.[1]?.trim().toLowerCase();
+  if (!each) return unit;
+  return /^\d/.test(each) ? `${unit} per ${each.replace(/\bml\b/, 'mL')}` : `${unit} ${each}`;
+}
 
 const OTC_HEADINGS = /^(Uses|Directions|Warnings?|Purposes?|Other information)\b[:\s]*/;
 const PLR_HEADING =
@@ -224,6 +273,8 @@ export function cleanLabelText(raw: string, key?: LabelSectionKey): string {
     .replace(/\(\s*\d+(\.\d+)?(\s*,\s*\d+(\.\d+)?)*\s*\)/g, '')
     .replace(/To report SUSPECTED ADVERSE REACTIONS[\s\S]*?(?:medwatch|1-800-FDA-1088)\.?(\s*or\s+www\.fda\.gov\/medwatch\.?)?/gi, '')
     .replace(/See full prescribing information for complete boxed warning\.?/gi, '')
+    .replace(/(\d\.\d+)\s?m\s?2\b/g, '$1 m²')
+    .replace(/\b(mg|mcg|mL|g|units?)\/m\s?2\b/g, '$1/m²')
     .replace(/(^|\s)o\s+(?=[A-Z])/g, '; ')
     .replace(/:\s*;\s*/g, ': ')
     .replace(/\.\s*;\s*/g, '. ')
@@ -258,16 +309,55 @@ export function highlightBullets(text: string): { intro: string | null; items: s
   }
   // Some labels lost their bullet glyphs: split "Diuretics: … NSAIDS: … Lithium: …" on headings.
   if (cut > 0 && region.length < 1500) {
-    const parts = region.split(/\s+(?=[A-Z][A-Za-z0-9,/() -]{1,60}?:\s)/).map((p) => p.trim()).filter(Boolean);
-    const withHeadings = parts.filter((p) => /^[A-Z][A-Za-z0-9,/() -]{1,60}?:\s/.test(p));
-    if (withHeadings.length >= 2) {
-      const [head = '', ...rest] = parts;
-      const headIsItem = /^[A-Z][A-Za-z0-9,/() -]{1,60}?:\s/.test(head);
-      return { intro: headIsItem ? null : head.length < 220 ? head : null, items: headIsItem ? parts : rest };
+    const starts = headingStarts(region);
+    if (starts.length >= 2) {
+      const parts = starts.map((start, i) => region.slice(start, starts[i + 1] ?? region.length).trim()).filter(Boolean);
+      const head = region.slice(0, starts[0]).trim();
+      return { intro: head && head.length < 220 ? head : null, items: parts };
     }
   }
   return null;
 }
+
+const HEADING_JOINER = /^(and|of|or|the|in|with|to|for|on|a|an|&|\/|-|–)$/;
+
+/**
+ * Where each "Heading: text" item begins in flattened PLR highlights. A heading is the run of
+ * Capitalized words (plus joiners like "and"/"of", and anything in parentheses) right before a
+ * colon: "…discontinue treatment Lipid Abnormalities (hypertriglyceridemia, low HDL): Monitor…"
+ * starts at "Lipid", and "…tetracyclines Serious Skin Reactions: Monitor…" at "Serious".
+ */
+function headingStarts(region: string): number[] {
+  const starts: number[] = [];
+  for (const colon of region.matchAll(/:\s/g)) {
+    const words = [...region.slice(0, colon.index).matchAll(/\S+/g)];
+    let depth = 0;
+    let start: number | null = null;
+    for (let i = words.length - 1; i >= 0 && words.length - i <= 16; i--) {
+      const word = words[i]![0];
+      const closes = (word.match(/\)/g) ?? []).length;
+      const opens = (word.match(/\(/g) ?? []).length;
+      depth += closes;
+      const inParens = depth > 0;
+      depth = Math.max(0, depth - opens);
+      const bare = word.replace(/[()[\],]/g, '');
+      if (i < words.length - 1 && /[.;:!?]$/.test(word)) break; // the previous sentence ended here
+      if (!inParens && bare && !/^[A-Z0-9]/.test(bare) && !HEADING_JOINER.test(bare)) break;
+      start = words[i]!.index;
+    }
+    if (start === null) continue;
+    // Begin on a capitalized word ("and Serious Skin…" → "Serious Skin…").
+    const rest = region.slice(start, colon.index);
+    const first = rest.search(/(?:^|\s)[A-Z0-9]/);
+    if (first < 0) continue;
+    const at = start + first + (/\s/.test(rest[first] ?? '') ? 1 : 0);
+    if (!starts.includes(at)) starts.push(at);
+  }
+  return starts.sort((a, b) => a - b);
+}
+
+/** A leftover heading fragment ("Prior", "Use of", "Hypertension (Pseudotumor") rather than an item. */
+const isFragment = (item: string): boolean => item.split(/\s+/).length < 3 && !/[.:!?]$/.test(item.trim());
 
 export interface SectionSummary {
   /** Lead-in such as "Lisinopril is an ACE inhibitor indicated for:" (only with highlight items). */
@@ -282,7 +372,7 @@ export function summarizeSection(text: string | undefined, maxChars: number, max
   let used = 0;
   const highlights = highlightBullets(text);
   if (highlights) {
-    for (const item of highlights.items) {
+    for (const item of highlights.items.filter((i) => !isFragment(i))) {
       if (items.length >= maxItems || (items.length > 0 && used + item.length > maxChars)) break;
       items.push(truncateWords(item, Math.max(100, maxChars - used)));
       used += item.length;
@@ -330,7 +420,7 @@ export function summarizeBoxedWarning(text: string | undefined, maxChars = 420):
   if (!text) return null;
   let body = collapseWhitespace(text).replace(/^WARNINGS?:?\s*/i, '');
   // Upper-case runs are headings ("(A) PREMATURE DISCONTINUATION OF ELIQUIS …", "FETAL TOXICITY").
-  const headingPattern = /(?:\(\s*[A-Z0-9]\s*\)\s*)?(?:WARNINGS?:\s*)?\b[A-Z][A-Z0-9,;&/'-]*(?:\s+[A-Z0-9][A-Z0-9,;&/()'-]*){0,20}\b(?=\s+(?:•|[A-Z][a-z]|\([A-Z0-9]\))|\s*$)/g;
+  const headingPattern = /(?:\(\s*[A-Z0-9]\s*\)\s*)?(?:WARNINGS?:\s*)?\b[A-Z][A-Z0-9,;&/'-]*(?:\s+(?:[-–—]\s+)?[A-Z0-9][A-Z0-9,;&/()'-]*){0,20}\b(?=\s+(?:•|[A-Z][a-z]|\([A-Z0-9]\))|\s*$)/g;
   const titles: string[] = [];
   body = body.replace(headingPattern, (match) => {
     const words = match.replace(/\(\s*[A-Z0-9]\s*\)|WARNINGS?:/g, ' ').trim();
@@ -364,10 +454,13 @@ export function labelDisplayName(label: DrugLabel): string {
 }
 
 export function labelCitation(label: DrugLabel, snippet?: string): CitationDraft {
-  const kind = label.productType?.includes('OTC') ? 'Drug Facts label' : 'FDA prescribing information';
+  const otc = label.productType?.includes('OTC') ?? false;
+  const kind = otc ? 'Drug Facts label' : 'FDA prescribing information';
+  // OTC directions count pills, so the strength they're written for matters ("…, 500 mg caplet").
+  const strength = otc && label.strength ? `, ${label.strength}` : '';
   return {
     source: 'openFDA',
-    title: `${labelDisplayName(label)} — ${kind}`,
+    title: `${labelDisplayName(label)}${strength} — ${kind}`,
     url: label.dailyMedUrl,
     publisher: 'U.S. Food and Drug Administration (openFDA / DailyMed)',
     year: extractYear(label.effectiveDate),

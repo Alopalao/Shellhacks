@@ -40,7 +40,7 @@ export const lessonCategories: LessonCategory[] = [
   {
     id: 'cosmetic',
     title: 'Cosmetic & Aesthetic Care',
-    description: 'Plastic surgery, teeth whitening, clear skin, injectables, lasers, and hair — safely.',
+    description: 'Plastic surgery, LASIK, smiles, clear skin, injectables, lasers, body contouring, and hair — safely.',
     icon: 'sparkles-outline',
   },
   {

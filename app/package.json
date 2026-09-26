@@ -2,6 +2,9 @@
   "name": "brian-app",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "engines": {
+    "node": "^20.19.4 || ^22.13.0 || ^24.3.0 || >=25.0.0"
+  },
   "dependencies": {
     "@expo/ui": "~57.0.20",
     "@expo/vector-icons": "^15.0.2",
@@ -41,7 +44,7 @@
     "android": "expo start --android",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "export:web": "expo export --platform web"
+    "export:web": "expo export --platform web --clear"
   },
   "private": true
 }

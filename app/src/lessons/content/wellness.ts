@@ -29,7 +29,7 @@ export const lessons: Lesson[] = [
         body: md(
           'Screening tests look for health problems **before you have symptoms**, when they are usually easier to treat. Some screenings can even prevent disease, for example by finding and removing growths in the colon before they become cancer.',
           '',
-          'In the US, the **US Preventive Services Task Force (USPSTF)**, an independent panel of experts, reviews the evidence for each screening and gives it a grade. Services graded **A or B** are recommended. Recommendations are reviewed over time and can change as new evidence comes in, so the list below reflects the current ones.',
+          'In the US, the **US Preventive Services Task Force (USPSTF)**, an independent panel of experts, reviews the evidence for each screening and gives it a grade. Services graded **A or B** are recommended. Recommendations can change as new evidence comes in, and the task force\'s membership changed in 2026, so ask your clinician what is current. The list below covers the most common ones.',
         ),
       },
       {
@@ -42,7 +42,8 @@ export const lessons: Lesson[] = [
           '- **HIV:** at least once for everyone 15 to 65, and more often if you are at higher risk',
           '- **Unhealthy alcohol use:** screening and brief counseling for adults',
           '- **Tobacco use:** clinicians should ask and offer help to quit',
-          '- **Hepatitis B:** for adults at higher risk',
+          '- **Unhealthy drug use:** screening questions for adults 18 and older',
+          '- **Hepatitis B and syphilis:** for adults at higher risk',
           '',
           'Many of these are simple questionnaires or a single blood test that can be done at a routine visit.',
         ),
@@ -51,6 +52,8 @@ export const lessons: Lesson[] = [
         heading: 'Screenings that start in your 20s to 40s',
         body: md(
           '- **Cervical cancer (women 21 to 65):** a Pap test every 3 years from 21 to 29. From 30 to 65, an HPV test every 5 years, HPV plus Pap every 5 years, or a Pap test every 3 years.',
+          '- **Chlamydia and gonorrhea:** for sexually active women 24 and younger, and older women at higher risk.',
+          '- **Intimate partner violence (women of childbearing age):** your clinician may ask whether you feel safe at home and offer support.',
           '- **Prediabetes and type 2 diabetes (35 to 70):** for adults who have overweight or obesity.',
           '- **Heart disease prevention (40 to 75):** your clinician checks cholesterol and other risk factors, and a statin may be recommended if your risk is higher.',
           '- **Breast cancer (women 40 to 74):** a mammogram every 2 years.',
@@ -61,7 +64,7 @@ export const lessons: Lesson[] = [
         heading: 'Screenings in your 50s and beyond',
         body: md(
           '- **Lung cancer (50 to 80):** a yearly low-dose CT scan if you have a 20 pack-year smoking history and still smoke or quit within the past 15 years. (One pack a day for 20 years equals 20 pack-years.)',
-          '- **Prostate cancer (men 55 to 69):** decide with your clinician whether a PSA test is right for you after talking about benefits and harms.',
+          '- **Prostate cancer (men 55 to 69):** decide with your clinician whether a PSA test is right for you after talking about benefits and harms. This is not an A or B recommendation, so check whether your plan covers it. Medicare Part B covers a yearly PSA test for men over 50.',
           '- **Osteoporosis:** a bone density test for women 65 and older, and for younger women past menopause who are at higher risk.',
           '- **Abdominal aortic aneurysm:** a one-time ultrasound for men 65 to 75 who have ever smoked.',
           '- **Fall prevention (65 and older):** exercise programs for people at higher risk of falling.',
@@ -70,14 +73,14 @@ export const lessons: Lesson[] = [
       {
         heading: 'How coverage usually works (US)',
         body: md(
-          'Under the Affordable Care Act, most private health plans cover USPSTF A and B services **at no cost to you**, with no copay or coinsurance, even before you meet your deductible, when you see an **in-network** provider. Medicare covers many preventive services too, including a yearly wellness visit.',
+          'Under the Affordable Care Act, most private health plans cover USPSTF A and B services **at no cost to you**, with no copay or coinsurance, even before you meet your deductible, when you see an **in-network** provider (one that has a contract with your plan). Medicare covers many preventive services too, including a yearly wellness visit.',
           '',
           "A few things can still lead to a bill:",
           '',
           '- The visit also covers a new problem or a chronic condition.',
           '- You use an out-of-network provider.',
-          '- You have an older "grandfathered" plan.',
-          '- Follow-up tests after an abnormal result are billed differently.',
+          '- You have an older "grandfathered" plan (one that existed on March 23, 2010, and hasn\'t changed much since).',
+          '- Some tests after an abnormal result are billed as diagnostic care. Still, most plans must fully cover a colonoscopy after a positive home stool test and, from 2026 plan years, extra imaging or a biopsy needed to finish a breast cancer screening. Medicare covers that colonoscopy too, but you may owe part of the cost if a polyp is removed.',
           '',
           'Call the number on your insurance card before scheduling if you are unsure. Coverage details vary by plan.',
         ),
@@ -97,7 +100,7 @@ export const lessons: Lesson[] = [
       'Screenings find problems early, often before any symptoms appear.',
       'All adults should have their blood pressure checked and be screened for depression. Most adults need a one-time hepatitis C test and HIV test.',
       'Colorectal screening starts at 45. Women 40 to 74 should get a mammogram every 2 years.',
-      'Most US plans cover USPSTF A and B screenings with no cost-sharing in network. Confirm with your plan.',
+      'Most US plans cover USPSTF A and B screenings at no cost to you when you use an in-network provider. Confirm with your plan.',
     ],
     quiz: [
       {
@@ -128,7 +131,7 @@ export const lessons: Lesson[] = [
         question: 'Under the ACA, how do most private plans cover recommended preventive screenings?',
         options: [
           'Only after you meet your deductible',
-          'With no cost-sharing when you use an in-network provider',
+          'At no cost to you when you use an in-network provider',
           'They are never covered',
           'Only if you already have symptoms',
         ],
@@ -157,6 +160,11 @@ export const lessons: Lesson[] = [
         title: 'MyHealthfinder',
         publisher: 'Office of Disease Prevention and Health Promotion (HHS)',
         url: 'https://odphp.health.gov/myhealthfinder',
+      },
+      {
+        title: 'FAQs About Affordable Care Act Implementation Part 51',
+        publisher: 'CMS',
+        url: 'https://www.cms.gov/cciio/resources/fact-sheets-and-faqs/downloads/faqs-part-51.pdf',
       },
     ],
     askBrianPrompts: [
@@ -202,7 +210,7 @@ export const lessons: Lesson[] = [
           '',
           '- **Best timing:** September or October, ideally by the end of October. For most adults, getting it in July or August is too early, because protection may fade before the season ends.',
           '- **It takes about 2 weeks** after the shot for protection to build.',
-          '- **Adults 65 and older** may be offered a flu vaccine made for older adults, such as a high-dose or adjuvanted (immune-boosting) vaccine. Ask which one is available.',
+          '- **Adults 65 and older** should get one of three preferred flu vaccines if one is available: high-dose, recombinant (egg-free), or adjuvanted (immune-boosting). If none of these is available, any flu vaccine approved for your age is fine.',
           '',
           'It is still worth getting vaccinated later in the season if you missed the fall window.',
         ),
@@ -212,7 +220,7 @@ export const lessons: Lesson[] = [
         body: md(
           'Tetanus, diphtheria, and whooping cough (pertussis) are prevented by **Td** or **Tdap** vaccines.',
           '',
-          "- Adults need a tetanus booster (Td or Tdap) **every 10 years**. If you never got Tdap as an adult, get one dose.",
+          "- Adults need a tetanus booster (Td or Tdap) **every 10 years**. If you never got a Tdap shot at age 10 or older, get one dose of Tdap.",
           '- Tdap is recommended **during each pregnancy** to help protect the newborn from whooping cough.',
           '- After a deep or dirty wound, you may need a booster sooner. Tell the clinician treating the wound when you had your last tetanus shot.',
         ),
@@ -220,7 +228,7 @@ export const lessons: Lesson[] = [
       {
         heading: 'Vaccines based on age and health',
         body: md(
-          '- **Shingles:** 2 doses of the recombinant vaccine, 2 to 6 months apart, for adults 50 and older, and for adults 19 and older with a weakened immune system. Get it even if you have had shingles or chickenpox.',
+          '- **Shingles:** 2 doses of the shingles vaccine (Shingrix), 2 to 6 months apart, for adults 50 and older, and for adults 19 and older with a weakened immune system. Get it even if you have had shingles or chickenpox.',
           '- **Pneumococcal (pneumonia):** for all adults 50 and older, and younger adults with certain health conditions.',
           '- **RSV:** a single dose for adults 75 and older, and adults 50 to 74 at higher risk, such as those with chronic heart or lung disease, a weakened immune system, or who live in a nursing home. It is not a yearly shot. Late summer or early fall is the best time.',
           '- **Hepatitis B:** for adults 19 to 59, and adults 60 and older with risk factors or who want it.',
@@ -231,7 +239,7 @@ export const lessons: Lesson[] = [
       {
         heading: 'COVID-19 vaccines: ask about your situation',
         body: md(
-          'COVID-19 vaccine guidance has changed several times since 2025. The updated 2026–2027 vaccines are FDA-approved for **adults 65 and older** and for **younger people with at least one condition** that raises their risk of severe COVID-19, such as diabetes or chronic heart or lung disease.',
+          'COVID-19 vaccine guidance has changed several times since 2025. This season\'s updated COVID-19 vaccines are FDA-approved for **adults 65 and older** and for **younger people with at least one condition** that raises their risk of severe COVID-19, such as diabetes or chronic heart or lung disease.',
           '',
           'Federal recommendations are being reviewed and challenged in court, and pharmacy rules and insurance coverage can vary by state and plan. The most reliable step is to ask your clinician or pharmacist:',
           '',
@@ -246,8 +254,8 @@ export const lessons: Lesson[] = [
           "You can usually get vaccinated at your clinician's office, a pharmacy, or your local health department. Pharmacists can give many adult vaccines, but the rules vary by state. Vaccines.gov can help you find locations.",
           '',
           '- **Most private plans** cover recommended vaccines at no cost when you use an in-network provider.',
-          '- **Medicare Part B** covers flu, pneumococcal, and COVID-19 shots.',
-          '- **Medicare Part D** covers other recommended vaccines, such as shingles, Tdap, and RSV, generally at no cost to you.',
+          '- **Medicare Part B** (medical coverage) covers flu, pneumococcal, and COVID-19 shots.',
+          '- **Medicare Part D** (drug coverage) covers other recommended vaccines, such as shingles, Tdap, and RSV, generally at no cost to you.',
           '- **Medicaid** covers recommended vaccines for adults.',
           '',
           'Ask before your appointment if you are unsure, and bring your insurance card.',
@@ -278,7 +286,7 @@ export const lessons: Lesson[] = [
         ],
         answerIndex: 0,
         explanation:
-          'The recombinant shingles vaccine is a 2-dose series given 2 to 6 months apart. It is recommended even if you have had shingles or chickenpox.',
+          'The shingles vaccine (Shingrix) is a 2-dose series given 2 to 6 months apart. It is recommended even if you have had shingles or chickenpox.',
       },
       {
         question: 'Which statement about RSV vaccines for adults is correct?',
@@ -1025,6 +1033,8 @@ export const lessons: Lesson[] = [
           'If you are thinking about using e-cigarettes to quit smoking, talk with your clinician about FDA-approved medicines first. Using both cigarettes and e-cigarettes does not give you the health benefits of quitting smoking completely.',
           '',
           'If you vape and want to stop, the same kinds of support, like coaching, text programs, and a quit plan, can help.',
+          '',
+          '**Keep all nicotine away from children.** Swallowing e-liquid, or chewing nicotine gum, lozenges, or pouches, can poison a young child. Store these products and vapes in their original packaging, locked up and out of reach. If a child swallows or touches nicotine, call Poison Help at **1-800-222-1222**. **Call 911** if the child has a seizure, has trouble breathing, collapses, or can\'t be woken up.',
         ),
       },
       {
@@ -1086,9 +1096,9 @@ export const lessons: Lesson[] = [
         url: 'https://www.cancer.gov/about-cancer/causes-prevention/risk/tobacco/cessation-fact-sheet',
       },
       {
-        title: 'Want to Quit Smoking? FDA-Approved and FDA-Cleared Cessation Products Can Help',
-        publisher: 'FDA',
-        url: 'https://www.fda.gov/consumers/consumer-updates/want-quit-smoking-fda-approved-and-fda-cleared-cessation-products-can-help',
+        title: 'E-Cigarettes and Liquid Nicotine Poisoning',
+        publisher: "Poison Help (America's Poison Centers)",
+        url: 'https://www.poisonhelp.org/e-cigarettes-and-liquid-nicotine/',
       },
       {
         title: 'E-Cigarettes (Vapes)',
@@ -1106,6 +1116,6 @@ export const lessons: Lesson[] = [
       'How can I handle cravings during my first week without cigarettes?',
       'Does my insurance cover nicotine patches or varenicline?',
     ],
-    tags: ['quit smoking', 'smoking', 'vaping', 'e-cigarettes', 'nicotine', 'tobacco', 'nicotine patch', 'varenicline', 'quitline', 'cravings'],
+    tags: ['quit smoking', 'smoking', 'vaping', 'e-cigarettes', 'nicotine', 'tobacco', 'nicotine patch', 'varenicline', 'quitline', 'cravings', 'nicotine poisoning'],
   },
 ];

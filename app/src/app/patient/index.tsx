@@ -15,6 +15,7 @@ import {
 } from '@/components/ui';
 import { DoctorCard, LatestNoteCard, QuickActions, RefillChips, TodayProgressCard, useLiveDashboard } from '@/features/home';
 import { buildChecklist, DoseChecklist } from '@/features/meds';
+import { explainNoteHref, patientNoteHref } from '@/features/notes';
 import { useNow } from '@/hooks/useInterval';
 import { useAuth } from '@/lib/auth';
 import { dateKey, displayName, firstName, formatDate, greeting } from '@/lib/format';
@@ -105,8 +106,8 @@ export default function PatientHomeScreen() {
         <LatestNoteCard
           note={note}
           doctorName={doctor && doctor.id === note.doctorId ? displayName(doctor) : undefined}
-          onExplain={() => router.push({ pathname: '/patient/ai', params: { mode: 'explain-note', noteId: note.id } })}
-          onOpen={() => router.push(`/patient/care/notes/${note.id}`)}
+          onExplain={() => router.push(explainNoteHref(note.id))}
+          onOpen={() => router.push(patientNoteHref(note.id))}
         />
       ) : null}
 
@@ -115,6 +116,7 @@ export default function PatientHomeScreen() {
         pending={data.pendingRefills}
         onOpen={(id) => router.push(`/patient/meds/${id}`)}
         onSeeAll={() => router.push('/patient/meds')}
+        now={now}
       />
 
       <View style={styles.section}>

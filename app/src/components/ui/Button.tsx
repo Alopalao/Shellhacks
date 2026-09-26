@@ -86,6 +86,7 @@ export function Button({
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: inactive, busy: loading }}
+      aria-busy={loading}
       hitSlop={size === 'sm' ? 4 : 0}
       style={({ pressed }) => [
         styles.base,
@@ -123,10 +124,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
+    maxWidth: '100%',
   },
   fullWidth: { alignSelf: 'stretch' },
-  content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  label: { textAlign: 'center' },
+  // maxWidth + shrinking label: long dynamic titles (drug or patient names) ellipsize inside the pill.
+  content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, maxWidth: '100%', flexShrink: 1 },
+  label: { textAlign: 'center', flexShrink: 1, minWidth: 0 },
   disabled: { opacity: 0.45 },
   pressedDim: { opacity: 0.82 },
 });

@@ -60,14 +60,10 @@ function stripUndefined(draft: CitationDraft): CitationDraft {
 /**
  * Normalizes citation groups ("[1, 2]", "[1-3]", "[1][2]") to single "[n]" markers,
  * drops markers that don't match a source, renumbers the cited sources 1..k in order
- * of first use, and returns only those. If nothing is cited, the text is left without
- * markers and the top `fallbackCount` retrieved sources are returned (numbered 1..k).
+ * of first use, and returns only those. If nothing is cited, no sources are returned:
+ * listing retrieved-but-unused sources under an answer would read as evidence for it.
  */
-export function finalizeCitations(
-  text: string,
-  sources: Citation[],
-  fallbackCount = 3,
-): { content: string; citations: Citation[] } {
+export function finalizeCitations(text: string, sources: Citation[]): { content: string; citations: Citation[] } {
   const known = new Map(sources.map((source) => [source.id, source]));
 
   // Expand groups like [1, 3] or [2-4] (ranges are capped to avoid abuse).
@@ -92,10 +88,7 @@ export function finalizeCitations(
     return match;
   });
 
-  if (order.length === 0) {
-    const fallback = sources.slice(0, fallbackCount).map((source, index) => ({ ...source, id: String(index + 1) }));
-    return { content: tidy(withValidMarkers), citations: fallback };
-  }
+  if (order.length === 0) return { content: tidy(withValidMarkers), citations: [] };
 
   const renumber = new Map(order.map((oldId, index) => [oldId, String(index + 1)]));
   const content = withValidMarkers.replace(/\[(\d{1,3})\]/g, (_match, id: string) => `[${renumber.get(id) ?? id}]`);

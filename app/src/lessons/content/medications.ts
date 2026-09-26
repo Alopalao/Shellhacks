@@ -47,7 +47,7 @@ export const lessons: Lesson[] = [
           '- **“Twice a day”:** About 12 hours apart, or with breakfast and dinner? Some medicines need even spacing; others are timed with meals.',
           "- **“Four times a day”:** Four times in 24 hours, or four times while you're awake?",
           '- **“As needed”:** For which symptom, how soon you can repeat a dose, and the most you can take in a day.',
-          "- **“On an empty stomach”:** Generally at least 2 hours before or 2 hours after eating, but follow your pharmacist's advice for your medicine.",
+          '- **“On an empty stomach”:** Usually 1 hour before or 2 hours after eating. Some medicines have their own timing. For example, thyroid medicine is often taken 30 to 60 minutes before breakfast. Follow your label and your pharmacist.',
           '- **“Take with food”:** With a meal or snack, often to protect your stomach or help your body absorb it.',
           '',
           'Prescriptions and visit notes may use shorthand like BID (twice a day), qd (every day), qhs (at bedtime), PO (by mouth), or PRN (as needed). BRIAN can translate these for you.',
@@ -154,6 +154,16 @@ export const lessons: Lesson[] = [
         publisher: 'NIH MedlinePlus',
         url: 'https://medlineplus.gov/ency/article/002209.htm',
       },
+      {
+        title: 'Tetracycline: MedlinePlus Drug Information',
+        publisher: 'NIH MedlinePlus',
+        url: 'https://medlineplus.gov/druginfo/meds/a682098.html',
+      },
+      {
+        title: 'Levothyroxine: MedlinePlus Drug Information',
+        publisher: 'NIH MedlinePlus',
+        url: 'https://medlineplus.gov/druginfo/meds/a682461.html',
+      },
     ],
     askBrianPrompts: [
       'What does “take on an empty stomach” mean for my medicine?',
@@ -222,7 +232,7 @@ export const lessons: Lesson[] = [
           '',
           "- If your refill looks different, ask the pharmacist to confirm it's the right medicine.",
           '- If you are allergic to a dye or another inactive ingredient, tell your pharmacist so they can check.',
-          "- If you notice a new side effect after a switch, tell your prescriber or pharmacist. You can also report it to the FDA's MedWatch program.",
+          "- If you notice a new side effect after a switch, tell your prescriber or pharmacist. You can also report it to MedWatch, the FDA's system for reporting side effects.",
           '',
           'For a few medicines where small changes in blood levels matter, such as warfarin or levothyroxine, your prescriber may want to know when your product changes.',
         ),
@@ -232,9 +242,9 @@ export const lessons: Lesson[] = [
         body: md(
           'In most states, your pharmacist can fill a brand-name prescription with an FDA-approved generic unless your prescriber indicates the brand is medically necessary. The exact rules vary by state.',
           '',
-          'If you want to stay on the brand, talk with your prescriber and check with your insurance plan. Many plans charge much more for a brand when a generic is available, and some require prior authorization first.',
+          'If you want to stay on the brand, talk with your prescriber and check with your insurance plan. Many plans charge much more for a brand when a generic is available, and some require prior authorization, meaning the plan must approve the brand before it will pay.',
           '',
-          "To find out whether a generic exists, ask your pharmacist or look up the drug in the FDA's Orange Book.",
+          "To find out whether a generic exists, ask your pharmacist or look up the drug in the FDA's Orange Book, a free online list of approved drugs and their generic versions.",
         ),
       },
       {
@@ -344,7 +354,7 @@ export const lessons: Lesson[] = [
           '',
           'Ask about:',
           '',
-          '- A **generic** or a lower-cost medicine in the same drug class',
+          '- A **generic,** or a similar lower-cost medicine that treats the same condition',
           "- A medicine on a **lower tier** of your plan's formulary (its list of covered drugs)",
           '- Whether each medicine is still needed. A regular medication review can sometimes safely reduce what you take.',
           '',
@@ -369,7 +379,7 @@ export const lessons: Lesson[] = [
         body: md(
           'Medicare drug coverage (Part D, including most Medicare Advantage plans) has protections that can lower your costs:',
           '',
-          '- **Yearly out-of-pocket cap:** Once your spending on covered drugs reaches the cap ($2,100 in 2026 and $2,400 in 2027), you pay nothing more for covered drugs that year.',
+          '- **Yearly out-of-pocket cap:** Once your spending on covered drugs reaches the yearly cap, you pay nothing more for covered drugs that year. The cap usually goes up each year ($2,100 in 2026 and $2,400 in 2027), so check Medicare.gov for the current amount.',
           '- **Insulin:** You pay no more than $35 for a one-month supply of each covered insulin product.',
           "- **Medicare Prescription Payment Plan:** Spreads your drug costs into monthly payments over the year. It doesn't lower costs, but it can make them easier to manage.",
           '- **Extra Help:** A program for people with limited income and resources that lowers premiums, deductibles, and copays. You can apply through Social Security.',
@@ -409,7 +419,7 @@ export const lessons: Lesson[] = [
     keyTakeaways: [
       'Tell your prescriber when cost is a concern and ask about generics or lower-tier options.',
       'Compare pharmacy prices and ask about 90-day supplies.',
-      'Medicare drug plans cap yearly out-of-pocket costs for covered drugs ($2,100 in 2026) and insulin at $35 a month.',
+      'Medicare drug plans have a yearly out-of-pocket cap for covered drugs and limit covered insulin to $35 a month.',
       'Patient assistance programs, community health centers, and Extra Help can lower costs for people who qualify.',
       'Only buy online from licensed pharmacies that require a prescription.',
     ],
@@ -547,10 +557,12 @@ export const lessons: Lesson[] = [
           'NSAIDs (nonsteroidal anti-inflammatory drugs) such as ibuprofen (Advil, Motrin) and naproxen (Aleve) ease pain, fever, and swelling. They carry real risks:',
           '',
           '- **Stomach ulcers and bleeding,** especially if you are older, take a blood thinner or steroid, have had ulcers, smoke, or drink a lot of alcohol',
-          '- **Heart attack and stroke** with non-aspirin NSAIDs. This can happen at any time during treatment, and the risk is higher with long-term use or higher doses.',
+          '- **Heart attack and stroke** with non-aspirin NSAIDs, even early in treatment. The risk is higher with long-term use or higher doses.',
           '- **Kidney problems** and **higher blood pressure**',
           '',
-          'Ask a clinician before using NSAIDs if you have heart, kidney, or liver disease, high blood pressure, or past ulcers, or if you take a blood thinner. Avoid them from about 20 weeks of pregnancy on unless your clinician says otherwise. For OTC use, stop and call a clinician if pain lasts more than 10 days or fever lasts more than 3 days. Aspirin is also an NSAID; do not give it to children or teens unless a doctor says to.',
+          'Ask a clinician before taking one if you have heart, kidney, or liver disease, high blood pressure, or past ulcers, or if you take a blood thinner. Avoid NSAIDs from about 20 weeks of pregnancy on unless your clinician says otherwise. Aspirin is also an NSAID; do not give it to children or teens unless a doctor says to.',
+          '',
+          'If you use an OTC NSAID, **stop and call a clinician** if pain lasts more than 10 days or fever more than 3 days. Stop and call **right away** for stomach pain, vomit that is bloody or looks like coffee grounds, or bloody or black, tarry stools. **Call 911** for chest pain, shortness of breath, weakness in one part or side of the body, or slurred speech.',
         ),
       },
       {
@@ -691,7 +703,7 @@ export const lessons: Lesson[] = [
           '- Colds and runny noses, even when mucus is thick, yellow, or green',
           '- The flu or COVID-19 (these have their own antiviral medicines)',
           '- Most sore throats',
-          '- Bronchitis (chest colds)',
+          '- Most chest colds (bronchitis)',
           '',
           'Antibiotics **are** needed for certain bacterial infections, such as strep throat, whooping cough, and urinary tract infections (UTIs). Even some bacterial infections, including many sinus infections and some ear infections, get better without antibiotics.',
         ),
@@ -719,7 +731,7 @@ export const lessons: Lesson[] = [
           "- **Don't share yours.**",
           '- **Dispose of unused antibiotics** safely, such as at a drug take-back location.',
           '',
-          "If you have side effects, call your clinician or pharmacist instead of just stopping.",
+          "If you have side effects, call your clinician or pharmacist instead of just stopping. Call your clinician if you get diarrhea while taking an antibiotic or in the month after you finish, especially with fever or belly pain. It could be C. diff.",
         ),
       },
       {
@@ -733,6 +745,8 @@ export const lessons: Lesson[] = [
           '- Ask your pharmacist which OTC pain relievers or fever reducers are safe for you.',
           '',
           'Contact a clinician if you have trouble breathing or fast breathing, signs of dehydration, a fever lasting more than 4 days, symptoms lasting more than 10 days without getting better, symptoms that improve and then come back or get worse, or a long-term health problem that is getting worse.',
+          '',
+          "If your baby is 3 months or younger and has a rectal temperature of 100.4°F (38°C) or higher, call your baby's clinician right away.",
         ),
       },
       {
@@ -800,7 +814,8 @@ export const lessons: Lesson[] = [
         url: 'https://www.cdc.gov/antimicrobial-resistance/about/index.html',
       },
       { title: 'Manage Common Cold', publisher: 'CDC', url: 'https://www.cdc.gov/common-cold/treatment/index.html' },
-      { title: 'Antibiotics', publisher: 'NIH MedlinePlus', url: 'https://medlineplus.gov/antibiotics.html' },
+      { title: 'About C. diff', publisher: 'CDC', url: 'https://www.cdc.gov/c-diff/about/index.html' },
+      { title: 'Fever', publisher: 'NIH MedlinePlus', url: 'https://medlineplus.gov/ency/article/003090.htm' },
     ],
     askBrianPrompts: [
       'How can I tell if my sore throat needs an antibiotic?',
@@ -858,6 +873,7 @@ export const lessons: Lesson[] = [
           '- Never call medicine “candy.”',
           '- Ask visitors to keep purses and bags that hold medicines out of reach.',
           '- **Lock up** opioid pain medicines and other drugs that can be misused, and keep track of how many are left.',
+          '- If anyone in your home takes opioid medicines, **keep naloxone** nasal spray where others can find it. It reverses an opioid overdose and is sold without a prescription. See the lesson on poisoning and overdose.',
           '',
           'Save Poison Help, 1-800-222-1222, in your phone and share it with babysitters and other caregivers.',
         ),
@@ -905,7 +921,7 @@ export const lessons: Lesson[] = [
     ],
     keyTakeaways: [
       'Store medicines in a cool, dry place in their original containers, and check expiration dates.',
-      'Keep all medicines and vitamins up and away from children, and lock up opioids.',
+      'Keep all medicines and vitamins up and away from children, lock up opioids, and keep naloxone at home if anyone takes them.',
       'Take-back sites and mail-back envelopes are the best way to get rid of most medicines.',
       'No take-back option? Mix medicine with coffee grounds or cat litter, seal it, and put it in the trash.',
       "Only flush medicines that are on the FDA's flush list.",
@@ -969,6 +985,11 @@ export const lessons: Lesson[] = [
         publisher: 'CDC',
         url: 'https://www.cdc.gov/medication-safety/protect/index.html',
       },
+      {
+        title: 'Information about Naloxone and Nalmefene',
+        publisher: 'FDA',
+        url: 'https://www.fda.gov/drugs/postmarket-drug-safety-information-patients-and-providers/information-about-naloxone-and-nalmefene',
+      },
     ],
     askBrianPrompts: [
       'How do I find a drug take-back location near me?',
@@ -984,6 +1005,7 @@ export const lessons: Lesson[] = [
       'child safety',
       'poison prevention',
       'opioids',
+      'naloxone',
       'sharps',
     ],
   },
@@ -999,8 +1021,8 @@ export const lessons: Lesson[] = [
     level: 'Basics',
     icon: 'alarm-outline',
     callout: {
-      kind: 'tip',
-      text: "Don't stop a prescribed medicine on your own because of side effects or cost. Call your prescriber or pharmacist first. Some medicines are dangerous to stop suddenly, and there is usually a better option.",
+      kind: 'warning',
+      text: "Don't stop a prescribed medicine on your own because of side effects or cost. Call your prescriber or pharmacist first, because some medicines are dangerous to stop suddenly. But call 911 for trouble breathing or swelling of the face, lips, tongue, or throat, and call or text 988 if a medicine brings on thoughts of hurting yourself.",
     },
     sections: [
       {
@@ -1067,7 +1089,7 @@ export const lessons: Lesson[] = [
         body: md(
           'The three big reasons people stop medicines on their own all have better solutions:',
           '',
-          "- **Side effects:** Tell your prescriber. They may change the dose, the timing, or the medicine. Some side effects fade after the first few weeks. Don't stop suddenly, because some medicines, including certain blood pressure, seizure, and antidepressant medicines, can cause problems if stopped abruptly.",
+          "- **Side effects:** Tell your prescriber. They may change the dose, the timing, or the medicine. Some side effects fade after the first few weeks. Don't stop suddenly, because some medicines, including certain blood pressure, seizure, and antidepressant medicines, can cause problems if stopped abruptly. For a serious reaction, like trouble breathing or swelling of the face, lips, tongue, or throat, call 911 right away.",
           '- **Cost:** Ask about generics, 90-day supplies, and assistance programs. See the lesson on saving money on prescriptions.',
           '- **Feeling better:** For many conditions, you feel better because the medicine is working. Ask your prescriber before stopping.',
           '',
@@ -1079,7 +1101,7 @@ export const lessons: Lesson[] = [
       "Tie each medicine to a daily habit and use reminders like alarms, pill organizers, or BRIAN's dose checklist.",
       'Request refills early and ask about 90-day supplies or refill synchronization.',
       "If you miss a dose, check the label or call your pharmacist, and don't double up unless told to.",
-      'Talk to your prescriber about side effects or cost instead of stopping on your own.',
+      'Talk to your prescriber about side effects or cost instead of stopping on your own, but call 911 for trouble breathing or swelling of the face or throat.',
     ],
     quiz: [
       {
@@ -1135,6 +1157,8 @@ export const lessons: Lesson[] = [
         publisher: 'National Institute on Aging (NIH)',
         url: 'https://www.nia.nih.gov/health/medicines-and-medication-management/taking-medicines-safely-you-age',
       },
+      { title: 'Drug allergies', publisher: 'NIH MedlinePlus', url: 'https://medlineplus.gov/ency/article/000819.htm' },
+      { title: '988 Suicide & Crisis Lifeline', publisher: '988 Lifeline (SAMHSA)', url: 'https://988lifeline.org/' },
     ],
     askBrianPrompts: [
       'Help me build a daily schedule for my medicines.',

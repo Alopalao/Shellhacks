@@ -24,7 +24,7 @@ export function ServerSection() {
 export function DemoSection() {
   const confirm = useConfirm();
   const toast = useToast();
-  const { refreshUser, user } = useAuth();
+  const { refreshUser } = useAuth();
   const [busy, setBusy] = useState(false);
 
   const reset = async () => {
@@ -57,8 +57,8 @@ export function DemoSection() {
     <Card style={styles.card}>
       <SectionHeader title="Demo" icon="flask-outline" />
       <AppText variant="small" tone="muted">
-        Restore the seeded patient ({user?.role === 'doctor' ? 'Maya Johnson and Jordan Lee' : 'you, Maya Johnson'}) and
-        Dr. Reyes with their medications, messages and notes.
+        Restore the demo accounts (Dr. Reyes and patients Maya Johnson and Jordan Lee) with their medications,
+        messages and notes.
       </AppText>
       <Button title="Reset demo data" variant="outline" icon="refresh-circle-outline" onPress={reset} loading={busy} />
     </Card>

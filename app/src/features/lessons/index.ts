@@ -32,6 +32,7 @@ export {
   paramValue,
   rankLessonSearch,
   readTimeLabel,
+  relatedLesson,
   sourceHost,
   validQuizQuestions,
   type CategoryStats,

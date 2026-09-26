@@ -9,7 +9,7 @@ export interface AiModeOption {
   /** Chip label. */
   label: string;
   icon: IoniconName;
-  /** Composer placeholder while this mode is selected. */
+  /** Composer placeholder while this mode is selected. Keep it to one line on a 375 px phone (~30 characters). */
   placeholder: string;
   /** Screen-reader hint for the chip. */
   description: string;
@@ -79,7 +79,7 @@ const PATIENT_MODES: readonly AiModeOption[] = [
     mode: 'medication',
     label: 'Medications & dosing',
     icon: 'medkit-outline',
-    placeholder: 'Ask about a medicine, dose or side effect…',
+    placeholder: 'Ask about a medicine or dose…',
     description: 'Questions about medicines, dosing and side effects, based on FDA labels',
     prompts: [
       'What should I do if I miss a dose?',
@@ -138,7 +138,7 @@ const DOCTOR_MODES: readonly AiModeOption[] = [
     mode: 'medication',
     label: 'Drug label',
     icon: 'flask-outline',
-    placeholder: 'Ask about a drug label, dosing or interaction…',
+    placeholder: 'Ask about dosing or interactions…',
     description: 'FDA drug label lookups: dosing, warnings, interactions',
     prompts: [
       'Atorvastatin: contraindications, warnings and key interactions.',

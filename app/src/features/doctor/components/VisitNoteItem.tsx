@@ -35,6 +35,7 @@ export function VisitNoteItem({ note, isNew }: { note: VisitNote; isNew?: boolea
           accessibilityRole="button"
           accessibilityLabel={expanded ? `Show less of ${note.title}` : `Read all of ${note.title}`}
           accessibilityState={{ expanded }}
+          aria-expanded={expanded}
           hitSlop={8}
           style={({ pressed }) => [styles.toggle, pressed && styles.pressed]}
         >

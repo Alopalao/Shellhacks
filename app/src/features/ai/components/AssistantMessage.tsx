@@ -144,8 +144,8 @@ export function AssistantMessage({ message, assistantName, disclaimer, onRequest
         <View style={styles.demoNote} accessible accessibilityRole="text">
           <Ionicons name="flask-outline" size={14} color={colors.textMuted} />
           <AppText variant="caption" tone="muted" style={styles.flex}>
-            Demo mode — this answer was assembled from evidence summaries without a language model. Add
-            ANTHROPIC_API_KEY on the server for full AI answers.
+            Demo mode — this answer was assembled from evidence summaries without the AI model (the server
+            has no ANTHROPIC_API_KEY, or the model was unavailable for this question).
           </AppText>
         </View>
       ) : null}

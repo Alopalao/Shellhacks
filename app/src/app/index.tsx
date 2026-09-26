@@ -23,7 +23,7 @@ const ACRONYM = [
 
 export default function Welcome() {
   const { status, user } = useAuth();
-  const { isWide, width } = useBreakpoint();
+  const { isWide, width, height } = useBreakpoint();
   const [fade] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
@@ -33,7 +33,8 @@ export default function Welcome() {
   if (status === 'loading') return <View style={styles.blank} />;
   if (status === 'signed-in' && user) return <Redirect href={homeHrefForRole(user.role)} />;
 
-  const photoSize = isWide ? Math.min(420, width * 0.32) : Math.min(260, width - 120);
+  // Phones: cap the photo by the screen height so the wordmark shows on the first screen too.
+  const photoSize = isWide ? Math.min(420, width * 0.32) : Math.max(160, Math.min(260, width - 120, height * 0.28));
 
   const hero = (
     <View style={[styles.band, isWide && styles.bandWide]}>
@@ -57,6 +58,29 @@ export default function Welcome() {
         </View>
       </View>
     </View>
+  );
+
+  const actionButtons = (
+    <>
+      <Button
+        title="Get started"
+        size="lg"
+        icon="arrow-forward"
+        iconPosition="right"
+        onPress={() => router.push('/login')}
+        accessibilityHint="Sign in or create an account"
+        style={isWide ? null : styles.stickyAction}
+      />
+      <Button
+        title="I'm a doctor"
+        size="lg"
+        variant="outline"
+        icon="medkit-outline"
+        onPress={() => router.push({ pathname: '/login', params: { role: 'doctor' } })}
+        accessibilityHint="Sign in as a clinician"
+        style={isWide ? null : styles.stickyAction}
+      />
+    </>
   );
 
   const copy = (
@@ -94,26 +118,7 @@ export default function Welcome() {
         ))}
       </View>
 
-      <View style={[styles.actions, isWide && styles.actionsWide]}>
-        <Button
-          title="Get started"
-          size="lg"
-          icon="arrow-forward"
-          iconPosition="right"
-          fullWidth={!isWide}
-          onPress={() => router.push('/login')}
-          accessibilityHint="Sign in or create an account"
-        />
-        <Button
-          title="I'm a doctor"
-          size="lg"
-          variant="outline"
-          icon="medkit-outline"
-          fullWidth={!isWide}
-          onPress={() => router.push({ pathname: '/login', params: { role: 'doctor' } })}
-          accessibilityHint="Sign in as a clinician"
-        />
-      </View>
+      {isWide ? <View style={[styles.actions, styles.actionsWide]}>{actionButtons}</View> : null}
       <Disclaimer compact text="BRIAN is a demo. It shares general health information and is not a substitute for professional medical care. In an emergency, call 911." />
     </View>
   );
@@ -142,6 +147,12 @@ export default function Welcome() {
           )}
         </Animated.View>
       </ScrollView>
+      {/* Phones: the two main actions stay pinned at the bottom instead of below the fold. */}
+      {isWide ? null : (
+        <View style={styles.stickyBar}>
+          <View style={styles.stickyRow}>{actionButtons}</View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -220,4 +231,14 @@ const styles = StyleSheet.create({
   acronymText: { flex: 1, gap: 1 },
   actions: { gap: spacing.sm },
   actionsWide: { flexDirection: 'row', flexWrap: 'wrap' },
+  stickyBar: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  stickyRow: { flexDirection: 'row', gap: spacing.sm, width: '100%', maxWidth: 560, alignSelf: 'center' },
+  stickyAction: { flex: 1, alignSelf: 'stretch', paddingHorizontal: spacing.md },
 });

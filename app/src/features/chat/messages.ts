@@ -115,6 +115,46 @@ export function mergeMessages(
   return normalizeMessages(next);
 }
 
+export interface ResyncOptions extends Omit<UpsertOptions, 'clientId'> {
+  /** Page size the latest page was requested with. */
+  pageSize: number;
+  /** Ids of the delivered messages we had when the request started (later live arrivals are kept). */
+  known: ReadonlySet<string>;
+}
+
+export interface ResyncResult {
+  messages: LocalMessage[];
+  /**
+   * The server's copy of the thread was replaced (demo reset): delivered messages we had are gone.
+   * They were dropped, so the result holds only the latest page (plus unsent bubbles).
+   */
+  replaced: boolean;
+}
+
+/**
+ * Merge a fresh copy of the latest page (resync after reconnect / refocus). The page is the truth
+ * for its time window: messages are never deleted, so a delivered message in that window the
+ * server no longer returns means the data was replaced underneath us (demo reset re-seeds with new
+ * ids). Then every delivered message we had that the server didn't return is dropped (older ones
+ * too: they're from the old data and "Load earlier" fetches the current ones). Pending / failed
+ * bubbles and messages that arrived live while the request was in flight are always kept.
+ */
+export function resyncMessages(
+  list: readonly LocalMessage[],
+  latest: readonly ChatMessage[],
+  options: ResyncOptions,
+): ResyncResult {
+  const { pageSize, known, ...upsert } = options;
+  const returned = new Set(latest.map((m) => m.id));
+  // A full page may have left out older messages (including ties at its oldest timestamp).
+  const windowStart =
+    latest.length >= pageSize ? Math.min(...latest.map((m) => timeOf(m.createdAt))) : Number.NEGATIVE_INFINITY;
+  const missing = (m: LocalMessage) => m.status === 'sent' && known.has(m.id) && !returned.has(m.id);
+  const replaced = list.some((m) => missing(m) && timeOf(m.createdAt) > windowStart);
+  const base = replaced ? list.filter((m) => !missing(m)) : list;
+  return { messages: mergeMessages(base, latest, upsert), replaced };
+}
+
 /**
  * Apply a `message:read` event: the reader has read every message sent by the *other* participant
  * (optionally only those created at or before `upTo`). Returns the same array when nothing changed.

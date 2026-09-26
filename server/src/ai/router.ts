@@ -59,8 +59,18 @@ export function createAiRouter(ctx: ServerContext, overrides: Partial<Omit<AiSer
     handle(async (req, res) => {
       const parsed = chatRequestSchema.safeParse(req.body ?? {});
       if (!parsed.success) return validationError(res, parsed.error);
-      const response = await service.chat(currentUser(res), parsed.data);
-      res.json(response);
+      // If the app gives up (its timeout) or goes away, stop the model call and don't save the turn.
+      const disconnected = new AbortController();
+      const onClose = () => {
+        if (!res.writableFinished) disconnected.abort();
+      };
+      res.on('close', onClose);
+      try {
+        const response = await service.chat(currentUser(res), parsed.data, { signal: disconnected.signal });
+        if (!disconnected.signal.aborted) res.json(response);
+      } finally {
+        res.off('close', onClose);
+      }
     }),
   );
 

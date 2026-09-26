@@ -1,7 +1,8 @@
 import type { RequestHandler, Response } from 'express';
 import type { Db } from '../context';
+import { findUser } from '../db/queries';
 import type { Role } from '../shared/contracts';
-import { parseBearer, userForToken } from './sessions';
+import { findSession, parseBearer, touchSession } from './sessions';
 
 /**
  * `Authorization: Bearer <token>` guard. On success sets `res.locals.user` (the full user)
@@ -14,11 +15,13 @@ export function createRequireAuth(db: Db): RequestHandler {
       res.status(401).json({ error: 'Please sign in to continue.' });
       return;
     }
-    const user = userForToken(db, token);
-    if (!user) {
+    const session = findSession(db, token);
+    const user = session && findUser(db.data, session.userId);
+    if (!session || !user) {
       res.status(401).json({ error: 'Your session has expired. Please sign in again.' });
       return;
     }
+    touchSession(db, session);
     res.locals.user = user;
     res.locals.sessionToken = token;
     next();

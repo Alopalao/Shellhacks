@@ -31,6 +31,7 @@ export function Stepper({ label, value, min, max, onChange, format, hint, disabl
         accessibilityLabel={label}
         accessibilityValue={{ min, max, now: value, text }}
         accessibilityState={{ disabled: !!disabled }}
+        aria-disabled={!!disabled}
         accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
         onAccessibilityAction={(e) => {
           if (disabled) return;

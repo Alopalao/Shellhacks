@@ -3,24 +3,27 @@ import { Chip, SectionHeader } from '@/components/ui';
 import type { Prescription, RefillRequest } from '@/lib/contracts';
 import { formatRelative } from '@/lib/format';
 import { spacing } from '@/theme';
-import { medLabel } from '@/features/meds';
+import { medLabel, refillState } from '@/features/meds';
 
 export interface RefillChipsProps {
   prescriptions: readonly Prescription[];
   pending: readonly RefillRequest[];
   onOpen: (prescriptionId: string) => void;
   onSeeAll: () => void;
+  /** Current time (a just-written prescription with 0 refills isn't flagged). Defaults to render time. */
+  now?: Date;
 }
 
 /**
- * Pending refill requests (yellow) and doctor-prescribed meds that are out of refills (outline).
+ * Pending refill requests (yellow) and doctor-prescribed meds that are out of refills (outline;
+ * just-written prescriptions with no refills aren't flagged).
  * Renders nothing when there's nothing to show.
  */
-export function RefillChips({ prescriptions, pending, onOpen, onSeeAll }: RefillChipsProps) {
+export function RefillChips({ prescriptions, pending, onOpen, onSeeAll, now }: RefillChipsProps) {
   const byId = new Map(prescriptions.map((p) => [p.id, p]));
   const pendingIds = new Set(pending.map((r) => r.prescriptionId));
   const needsRenewal = prescriptions.filter(
-    (p) => p.status === 'active' && !p.selfReported && p.refillsRemaining === 0 && !pendingIds.has(p.id),
+    (p) => p.status === 'active' && !p.selfReported && refillState(p, now) === 'out' && !pendingIds.has(p.id),
   );
   if (!pending.length && !needsRenewal.length) return null;
 

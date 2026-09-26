@@ -378,11 +378,23 @@ export function classDescription(name: string, epcClasses: string[] = []): strin
   return primary ? DRUG_CLASSES[primary].label : null;
 }
 
-/** Condition phrases FDA labels use, keyed by patterns that match a patient's condition list. */
+/**
+ * Condition phrases FDA labels use, keyed by patterns that match a patient's condition list.
+ * Qualified forms are different conditions: "intracranial hypertension" (pseudotumor
+ * cerebri) is not high blood pressure, and "renal elimination" is not kidney disease.
+ */
 const CONDITION_TERMS: Array<{ condition: RegExp; label: RegExp; plain: string }> = [
-  { condition: /hypertension|high blood pressure|\bhtn\b/i, label: /high blood pressure|hypertension/i, plain: 'high blood pressure' },
+  {
+    condition: /hypertension|high blood pressure|\bhtn\b/i,
+    label: /high blood pressure|(?<!(?:intracranial|pulmonary|portal|ocular|intraocular|idiopathic intracranial|arterial pulmonary) )\bhypertension\b(?! \(pseudotumor)/i,
+    plain: 'high blood pressure',
+  },
   { condition: /diabetes|\bt2dm\b|\bdm\b/i, label: /\bdiabet\w*/i, plain: 'diabetes' },
-  { condition: /kidney|renal|\bckd\b/i, label: /kidney|renal/i, plain: 'kidney disease' },
+  {
+    condition: /kidney|renal|\bckd\b/i,
+    label: /\bkidney (disease|problems?|impairment|failure|damage)\b|\brenal (impairment|disease|failure|insufficiency|dysfunction)\b/i,
+    plain: 'kidney disease',
+  },
   { condition: /heart (disease|failure)|\bchf\b|\bcad\b|coronary|heart attack/i, label: /heart (disease|failure|attack)/i, plain: 'heart disease' },
   { condition: /asthma/i, label: /\basthma\b/i, plain: 'asthma' },
   { condition: /liver|cirrhosis|hepat/i, label: /\bliver\b|cirrhosis/i, plain: 'liver disease' },

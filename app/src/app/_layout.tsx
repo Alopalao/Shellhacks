@@ -54,6 +54,7 @@ export default function RootLayout() {
                     <Stack.Screen name="login" options={{ title: 'Sign in · BRIAN' }} />
                     <Stack.Screen name="patient" options={{ title: 'BRIAN' }} />
                     <Stack.Screen name="doctor" options={{ title: 'BRIAN for clinicians' }} />
+                    <Stack.Screen name="+not-found" options={{ title: 'Page not found · BRIAN' }} />
                   </Stack>
                 </SplashGate>
               </ConfirmProvider>

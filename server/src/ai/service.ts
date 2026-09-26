@@ -37,9 +37,9 @@ import {
 } from '../evidence';
 import { takeSentences, titleCase, truncateWords } from '../evidence/text';
 import { SourceList, describeCitation, finalizeCitations, stripCitationMarkers } from './citations';
-import { ClaudeResponder, createClaudeClient, describeClaudeError, type ClaudeClientLike, type ToolRuntime } from './claude';
+import { ANSWER_DEADLINE_MS, ClaudeResponder, createClaudeClient, describeClaudeError, type ClaudeClientLike, type ToolRuntime } from './claude';
 import { classDescription, cleanDrugName, isOtc, isSupplement, lookupDrug } from './drugs';
-import { looksLikeClinicalNote } from './glossary';
+import { looksLikeClinicalNote, looksLikePastedNote } from './glossary';
 import { commonSideEffects, dedupeItems, interactionItems, isBoilerplateIntro, plainLabel, summaryToLines } from './label-text';
 import { DEMO_FOOTER, mockRespond, refusalFallbackReason } from './mock';
 import { buildUserTurn, systemPromptFor } from './prompts';
@@ -254,7 +254,11 @@ export class AiService {
 
   // ── Chat ─────────────────────────────────────────────────────────────────
 
-  async chat(user: User, request: ChatRequest): Promise<AiChatResponse> {
+  /**
+   * Answers and saves the turn. `signal` aborts when the app has disconnected (e.g. its own
+   * timeout fired): the answer is then not saved, so a retry doesn't duplicate the question.
+   */
+  async chat(user: User, request: ChatRequest, options: { signal?: AbortSignal } = {}): Promise<AiChatResponse> {
     const existing = request.conversationId ? this.getConversation(user, request.conversationId) : null;
     const mode = inferMode(request.mode, request.context, existing?.mode);
     const history: ChatTurn[] = (existing?.messages ?? []).slice(-HISTORY_TURNS).map((m) => ({
@@ -263,7 +267,8 @@ export class AiService {
     }));
     const input = this.buildInput(user, request, mode, history);
 
-    const answer = await this.answer(input);
+    const answer = await this.answer(input, options);
+    if (options.signal?.aborted) throw new AiHttpError(499, 'The request was cancelled before the answer was ready.');
     const now = this.now().toISOString();
     const userMessage: AiMessage = { id: `aim_${randomUUID()}`, role: 'user', content: request.message, createdAt: now, mode };
     const reply: AiMessage = {
@@ -299,8 +304,17 @@ export class AiService {
   }
 
   /** Produces the assistant reply for a prepared input (no persistence). */
-  async answer(input: ChatInput): Promise<{ content: string; citations: Citation[]; triage: AiMessage['triage']; mocked: boolean }> {
-    const triage = triageMessage(input.message, { noteLike: looksLikeClinicalNote(input.message) });
+  async answer(
+    input: ChatInput,
+    options: { signal?: AbortSignal } = {},
+  ): Promise<{ content: string; citations: Citation[]; triage: AiMessage['triage']; mocked: boolean }> {
+    // One budget for retrieval and every model round (below the app's 120 s timeout).
+    const deadline = Date.now() + ANSWER_DEADLINE_MS;
+    // Only a genuinely pasted note softens alarms (and never the writer's own words — see triage).
+    const triage = triageMessage(input.message, {
+      noteLike: looksLikePastedNote(input.message),
+      audience: input.role === 'doctor' ? 'clinician' : 'patient',
+    });
     const bundle = await retrieveEvidence(input, triage, this.evidence);
 
     let text: string | null = null;
@@ -318,6 +332,8 @@ export class AiService {
             { role: 'user' as const, content: buildUserTurn(input, bundle, this.now()) },
           ],
           tools: this.evidence.offline ? null : this.toolRuntime(bundle),
+          deadline,
+          signal: options.signal,
         });
         if (result.kind === 'refusal') {
           fallbackReason = refusalFallbackReason();
@@ -328,6 +344,7 @@ export class AiService {
           fallbackReason = "BRIAN's AI model returned an empty answer, so here is guidance from trusted sources instead.";
         }
       } catch (error) {
+        if (options.signal?.aborted) throw new AiHttpError(499, 'The request was cancelled before the answer was ready.');
         const reason = describeClaudeError(error);
         this.logger.warn(`[ai] Claude unavailable (${reason}); using the evidence-only responder.`);
         fallbackReason = `Answered in evidence-only mode because ${reason}.`;
@@ -387,13 +404,14 @@ export class AiService {
     if (this.evidence.offline) return offlineDrugInfo(clean);
 
     const form = /\b(hfa|inhal\w*|puffs?|aerosol|diskus)\b/i.test(clean) ? 'inhaler' : /\bnasal\b/i.test(clean) ? 'nasal spray' : null;
+    const extendedRelease = /\b(er|xr|xl|sr|cr|extended[- ]release|8[- ]?hr)\b/i.test(clean);
     const normalized = (await withDeadline(this.evidence.normalizeDrug(clean), 7_000, null)).value;
     const generic = normalized?.name ?? local?.name ?? cleanDrugName(clean);
     const supplement = isSupplement(generic) || isSupplement(clean);
     const [labelResult, medlineResult] = await Promise.all([
       supplement
         ? Promise.resolve({ value: null, timedOut: false, failed: false })
-        : withDeadline(this.evidence.drugLabel(generic, { rxcui: normalized?.rxcui, preferOtc: isOtc(generic), form }), 8_000, null),
+        : withDeadline(this.evidence.drugLabel(generic, { rxcui: normalized?.rxcui, preferOtc: isOtc(generic), form, extendedRelease }), 8_000, null),
       withDeadline(this.evidence.medlinePlusDrug({ name: generic, rxcui: normalized?.rxcui, form }), 8_000, null),
     ]);
     const label = labelResult.value;
@@ -485,9 +503,14 @@ export function labelSections(label: DrugLabel, medlineSummary: string | null): 
   add('Uses', [lead, usesLines.length > 0 ? sectionText(usesLines, uses.intro ? plainLabel(uses.intro) : 'The FDA label lists:') : ''].filter(Boolean).join('\n\n'));
 
   const dosing = summarizeSection(s.dosage, 600, 6);
+  const otcLabel = label.productType?.includes('OTC') ?? false;
+  // OTC directions count pills, which only fits the strength the label was written for.
+  const whose = otcLabel
+    ? `These directions are from the Drug Facts label${label.strength ? ` for ${label.strength} products` : ''}. Pill counts depend on the strength — follow the label on your own package, or ask a pharmacist.`
+    : 'Follow the directions on your own prescription label — your dose may differ.';
   add(
     'How to take',
-    [sectionText(summaryToLines(dosing), dosing.intro), 'Follow the directions on your own prescription label — your dose may differ.']
+    [sectionText(summaryToLines(dosing), dosing.intro), whose]
       .filter((t) => t.trim())
       .join('\n\n'),
   );

@@ -4,19 +4,23 @@
 
 import type { CitationDraft } from '../evidence/types';
 import { evidenceType, keyFinding, otcWarningHighlights, summarizeBoxedWarning, summarizeSection } from '../evidence';
-import { splitSentences, takeSentences, titleCase, truncateWords } from '../evidence/text';
+import { takeSentences, titleCase, truncateWords } from '../evidence/text';
 import { classDescription, findDrugMentions, knownInteraction, lookupDrug } from './drugs';
-import { findGlossaryTerms, isGlossaryQuestion, keyTerms, looksLikeClinicalNote, toPlainLanguage, type GlossaryEntry } from './glossary';
+import { findGlossaryTerms, glossaryQuestionTerms, keyTerms, looksLikeClinicalNote, toPlainLanguage, type GlossaryEntry } from './glossary';
 import { commonSideEffects, interactionItems, plainLabel, summaryToLines, summaryToText } from './label-text';
 import { describePrescription } from './prompts';
-import { detectAspect, detectTopics, type Aspect } from './topics';
+import { detectAspect, detectTopics, type Aspect, type HealthTopic } from './topics';
 import { CATEGORY_INFO, type TriageCategory } from './triage';
 import type { ChatInput, DrugEvidence, EvidenceBundle } from './types';
 
+/**
+ * Footer older demo answers ended with. The app now shows its own demo notice for
+ * `mocked` replies, so new answers don't repeat it; kept so stored history can be cleaned.
+ */
 export const DEMO_FOOTER = 'Demo mode — add ANTHROPIC_API_KEY for full AI answers.';
 
 export interface MockOptions {
-  /** Why the mock answered (e.g. the LLM failed); shown instead of the demo footer. */
+  /** Why the mock answered (e.g. the LLM failed); appended to the answer. */
   fallbackReason?: string | null;
 }
 
@@ -35,14 +39,9 @@ const endWithPeriod = (text: string): string => (/[.!?:]$/.test(text.trim()) ? t
 const listJoin = (items: string[]): string =>
   items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 
-function safetyLine(input: ChatInput): string {
-  return input.role === 'doctor'
-    ? 'Evidence summary assembled from the listed sources — verify details against the primary literature and full prescribing information.'
-    : 'BRIAN is an AI health guide, not a substitute for professional medical care. In an emergency, call 911.';
-}
-
-function footer(options: MockOptions): string {
-  return options.fallbackReason ? options.fallbackReason : DEMO_FOOTER;
+/** The app already shows the clinician disclaimer under every answer; patients also get the 911 reminder. */
+function safetyLine(input: ChatInput): string | null {
+  return input.role === 'doctor' ? null : 'BRIAN is an AI health guide, not a substitute for professional medical care. In an emergency, call 911.';
 }
 
 // Verified reference pages used to back glossary definitions.
@@ -88,6 +87,7 @@ function topicLead(bundle: EvidenceBundle, index = 0, maxChars = 320): { title: 
 function topicDetail(
   bundle: EvidenceBundle,
   aspect: Aspect,
+  question = '',
 ): { title: string; body: string; section: { heading: string; items: string[] } | null; id: string } | null {
   const entry = bundle.topics[0];
   if (!entry) return null;
@@ -128,6 +128,14 @@ function topicDetail(
   // Drop a trailing bold sub-heading with nothing under it.
   while (lines.length > 0 && /^\*\*[^*]+\*\*$/.test(lines[lines.length - 1]!)) lines.pop();
 
+  // A word the question asks about ("…a stroke and a TIA?") that the overview doesn't cover: add the paragraph that does.
+  const overview = lines.join(' ').toLowerCase();
+  const asked = findGlossaryTerms(question)
+    .map((m) => m.text.toLowerCase())
+    .filter((w) => w.length >= 2 && !overview.includes(w) && !entry.topic.title.toLowerCase().includes(w));
+  const covering = asked.length > 0 ? blocks.find((b) => b.kind === 'paragraph' && asked.some((w) => new RegExp(`\\b${w}\\b`, 'i').test(b.text))) : undefined;
+  if (covering) lines.push(`${takeSentences(covering.text, 420, 4)}${cite(id)}`);
+
   const aspectWords: Record<Exclude<Aspect, null>, RegExp> = {
     symptoms: /symptom|sign/i,
     prevention: /prevent/i,
@@ -139,6 +147,7 @@ function topicDetail(
     lifestyle: /prevent|lifestyle|healthy/i,
     diagnosis: /diagnos|test/i,
     recommendations: /how much|how often|recommend|guideline/i,
+    driving: /driv/i,
   };
   let section: { heading: string; items: string[] } | null = null;
   const matcher = aspect ? aspectWords[aspect] : /symptom|treat/i;
@@ -183,7 +192,8 @@ function questionsSection(questions: string[], title = 'Questions to ask your do
 
 function limitedEvidenceNote(bundle: EvidenceBundle): string | null {
   if (bundle.offline) return 'Live evidence lookups are turned off right now, so this answer uses BRIAN’s built-in guidance.';
-  if (bundle.sources.size === 0 && bundle.failures.length > 0) {
+  const retrieved = bundle.topics.length + bundle.articles.length + bundle.drugs.filter((d) => d.label || d.medline).length;
+  if (retrieved === 0 && bundle.failures.length > 0) {
     return "I couldn't reach the medical reference services just now, so this answer uses BRIAN's built-in guidance. Try again in a moment for cited details.";
   }
   return null;
@@ -222,11 +232,14 @@ function triageAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
     return blocks;
   }
 
-  blocks.push(heading(triage.title));
-  const lead = triage.level === 'emergency' ? `**${firstSentence(triage.message)}**` : firstSentence(triage.message);
-  blocks.push(`${lead}${info.citeLead === false ? '' : cite(refId)}`);
+  // The reply carries this triage, so the app shows its title and message in the banner right
+  // above the answer: start with the steps instead of repeating them.
   blocks.push(`${heading(triage.level === 'emergency' ? 'What to do right now' : 'What to do now')}\n${numbered(info.steps)}`);
   if (info.signs) blocks.push(`${heading(info.signs.heading)}\n${bullets(info.signs.items)}${cite(refId)}`);
+  else if (refId && triage.level === 'emergency' && info.citeLead !== false) {
+    const source = bundle.sources.get(refId);
+    if (source) blocks.push(`Learn more: **${source.title}** on ${source.source === 'MedlinePlus' ? 'MedlinePlus' : source.publisher ?? 'the NIH'}.${cite(refId)}`);
+  }
 
   // Extra context for the patient's own situation.
   const meds = input.patient?.medications ?? [];
@@ -255,10 +268,6 @@ function triageAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
   return blocks;
 }
 
-function firstSentence(text: string): string {
-  return splitSentences(text)[0] ?? text;
-}
-
 // ── Visit notes ──────────────────────────────────────────────────────────────
 
 type MedAction = 'start' | 'continue' | 'stop' | 'increase' | 'decrease' | 'as-needed' | 'mentioned';
@@ -271,7 +280,9 @@ function classifyAction(sentence: string, drugIndex: number): MedAction {
   if (/\b(increase|incr|↑|titrate up|raise|uptitrate)\b/.test(before)) return 'increase';
   if (/\b(decrease|decr|↓|reduce|lower|taper)\b/.test(before)) return 'decrease';
   if (/\b(cont|continue|continuing|remain on|stay on|on)\b/.test(before)) return 'continue';
-  if (/\b(prn|as needed)\b/i.test(all)) return 'as-needed';
+  // "PRN" only describes this medicine when it's in the medicine's own clause ("… q6h PRN"), not "f/u PRN".
+  const ownClause = all.slice(drugIndex).split(/[,;]|\bf\/u\b|\bfollow[- ]?up\b|\brtc\b/)[0] ?? '';
+  if (/\b(prn|as needed)\b/i.test(ownClause)) return 'as-needed';
   return 'mentioned';
 }
 
@@ -402,6 +413,57 @@ function labelKind(drug: DrugEvidence): string {
   return drug.label?.productType?.includes('OTC') ? 'Drug Facts label' : 'prescription label';
 }
 
+/** A medicine's name mid-sentence: generics stay lower case, proper names keep their capitals. */
+const drugText = (name: string): string => name.replace(/^st\.? john'?s wort$/i, "St. John's wort");
+
+/** Lower-cases a label phrase's first letter to continue a sentence, keeping acronyms ("NSAIDs"). */
+const continueSentence = (text: string): string => (/^[A-Z]{2,}/.test(text) ? text : `${text.charAt(0).toLowerCase()}${text.slice(1)}`);
+
+/** Dosing details meant for prescribers, not a patient reading "how it's usually taken". */
+const CLINICIAN_DOSING =
+  /\b(titrat\w*|pediatric|mg\/kg|kg\/day|per kg|body surface|m²|renal|kidney|glomerular|creatinine|crcl|e?gfr|hepatic|dialysis|geriatric|elderly|volume[- ]depleted|initiat\w*|increase (the )?dos\w*|as tolerated|adjust\w* (the )?dos\w*|assess\w*|monitor\w*|give|administer\w*|prescrib\w*|laboratory tests?|verification|documentation|full prescribing information|loading dose|intravenous|discontinu\w*|contrast|imaging|procedures?|surgery|switch\w*|conver(t|sion))\b/i;
+/** "What's the max…", "how much Tylenol can I take in a day?" */
+const DAILY_LIMIT_QUESTION = /\b(max(imum)?|most|limit|too much|per day|a day|daily|in 24 hours|how (much|many))\b/i;
+const LIMIT_DIRECTION = /\b(do not|don't|never) (exceed|take more than|use more than|give more than)\b|\bnot to exceed\b|\bmaximum (daily )?(dose|dosage)\b/i;
+const PER_DAY = /\d[^.]{0,50}\b(24 hours|a day|per day|daily|each day)\b/i;
+
+/** "500 mg caplet" → "500 mg caplets". */
+const unitsPlural = (strength: string): string => strength.replace(/\b(tablet|caplet|capsule|gelcap|softgel|geltab|lozenge|packet)$/i, '$1s');
+
+/**
+ * The label's directions for the "How it's usually taken" line. Patients get the everyday
+ * directions (no titration, pediatric, kidney or lab-monitoring details); "how much per day"
+ * questions lead with the label's own daily limit.
+ */
+function labelDosing(drug: DrugEvidence, clinician: boolean, question: string): { source: string; text: string } | null {
+  const label = drug.label;
+  const text = label?.sections.dosage;
+  if (!label || !text) return null;
+  const otc = label.productType?.includes('OTC') ?? false;
+  const summary = summarizeSection(text, clinician ? 380 : 1200, clinician ? 5 : 14);
+  let items = clinician
+    ? summary.items
+    : summary.items.filter((item) => !CLINICIAN_DOSING.test(item) && (otc || !/\b(child|children|pediatric|adolescents?)\b/i.test(item)));
+  if (DAILY_LIMIT_QUESTION.test(question)) {
+    const pieces = text.split(/•|(?<=[.;])\s+/).map((p) => p.trim());
+    const limit = pieces.find((p) => LIMIT_DIRECTION.test(p) && PER_DAY.test(p)) ?? pieces.find((p) => LIMIT_DIRECTION.test(p) && /\d/.test(p));
+    if (limit) items = [truncateWords(limit, 220), ...items.filter((item) => !item.includes(limit.slice(0, 30)) && !limit.includes(item.slice(0, 30)))];
+  }
+  const kept: string[] = [];
+  let used = 0;
+  for (const item of items) {
+    if (kept.length >= 5 || (kept.length > 0 && used + item.length > 420)) break;
+    kept.push(item);
+    used += item.length;
+  }
+  if (kept.length === 0) return null;
+  const intro = summary.intro && (clinician || !CLINICIAN_DOSING.test(summary.intro)) ? summary.intro : null;
+  const rendered = summaryToText({ intro, items: kept }, { plain: !clinician });
+  // OTC directions count pills: name the strength they're written for.
+  const source = otc && label.strength ? `FDA label for ${unitsPlural(label.strength)}` : 'FDA label';
+  return { source, text: rendered };
+}
+
 function medicationAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
   const blocks: string[] = [];
   const asked = bundle.drugs.filter((d) => d.role === 'asked');
@@ -422,14 +484,21 @@ function medicationAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
   );
   if (relevantInteractions.length > 0) {
     const first = relevantInteractions[0]!;
-    const askedName = asked[0]?.name ?? first.otherDrug;
-    const otherName = askedName === first.labelDrug ? first.otherDrug : first.labelDrug;
-    const otherIsPatientMed = patientMeds.some((m) => m.name === otherName) || asked.some((d) => d.name === otherName && d.prescription);
     const effect = plainLabel(first.text.replace(/^[^:]{2,60}:\s*/, '')).replace(/\.$/, '');
-    const via = first.viaClass ? `${first.via}, the group of medicines ${first.otherDrug} belongs to` : first.via;
-    shortAnswer.push(
-      `**Check with your doctor or pharmacist before taking ${askedName} with ${otherName}${otherIsPatientMed && !asked.some((d) => d.name === otherName) ? ' (which is on your medicine list)' : ''}.** The FDA label for ${first.labelDrug} warns about taking it with ${via}: ${effect.charAt(0).toLowerCase()}${effect.slice(1)}.${cite(first.sourceId)}`,
-    );
+    if (first.substance) {
+      shortAnswer.push(
+        `**The FDA label for ${first.labelDrug} mentions ${first.otherDrug}:** ${continueSentence(effect)}.${cite(first.sourceId)} Ask your pharmacist or doctor how much, if any, is OK for you.`,
+      );
+    } else {
+      // Name the asked medicine that is actually part of this interaction (not just the first one asked about).
+      const askedName = asked.find((d) => d.name === first.labelDrug || d.name === first.otherDrug)?.name ?? first.otherDrug;
+      const otherName = askedName === first.labelDrug ? first.otherDrug : first.labelDrug;
+      const otherIsPatientMed = patientMeds.some((m) => m.name === otherName) || asked.some((d) => d.name === otherName && d.prescription);
+      const via = first.viaClass ? `${first.via}, the group of medicines ${first.otherDrug} belongs to` : first.via;
+      shortAnswer.push(
+        `**Check with your doctor or pharmacist before taking ${drugText(askedName)} with ${drugText(otherName)}${otherIsPatientMed && !asked.some((d) => d.name === otherName) ? ' (which is on your medicine list)' : ''}.** The FDA label for ${first.labelDrug} warns about taking it with ${drugText(via)}: ${continueSentence(effect)}.${cite(first.sourceId)}`,
+      );
+    }
   } else if (comboQuestion) {
     const labelled = asked.filter((d) => d.label);
     const checkedAgainst = asked.length >= 2 ? asked.slice(1) : patientMeds;
@@ -456,17 +525,33 @@ function medicationAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
     }
   }
   if (bundle.conditionWarnings.length > 0) {
-    const byDrug = new Map<string, { conditions: string[]; sourceId: string }>();
+    const byDrug = new Map<string, { askFirst: string[]; cautions: string[]; sourceId: string }>();
     for (const w of bundle.conditionWarnings) {
-      const entry = byDrug.get(w.drug) ?? { conditions: [], sourceId: w.sourceId };
-      if (!entry.conditions.includes(w.plainCondition)) entry.conditions.push(w.plainCondition);
+      const entry = byDrug.get(w.drug) ?? { askFirst: [], cautions: [], sourceId: w.sourceId };
+      const list = w.askFirst ? entry.askFirst : entry.cautions;
+      if (!list.includes(w.plainCondition)) list.push(w.plainCondition);
       byDrug.set(w.drug, entry);
     }
+    const onRecord = (n: number) => (n > 2 ? 'all are' : n > 1 ? 'both are' : 'this is');
     for (const [drug, entry] of byDrug) {
-      shortAnswer.push(
-        `The ${drug} label also says to ask a doctor first if you have **${listJoin(entry.conditions)}** — ${entry.conditions.length > 1 ? 'both are' : 'this is'} on your health record.${cite(entry.sourceId)}`,
-      );
+      if (entry.askFirst.length > 0) {
+        shortAnswer.push(
+          `The ${drug} label also says to ask a doctor first if you have **${listJoin(entry.askFirst)}** — ${onRecord(entry.askFirst.length)} on your health record.${cite(entry.sourceId)}`,
+        );
+      }
+      if (entry.cautions.length > 0) {
+        shortAnswer.push(
+          `The ${drug} label has warnings that mention **${listJoin(entry.cautions)}** — ${onRecord(entry.cautions.length)} on your health record, so ask your doctor whether they apply to you.${cite(entry.sourceId)}`,
+        );
+      }
     }
+  }
+  // "Should I stop my atorvastatin…?": stopping or changing a prescription is the prescriber's call.
+  const prescribed = asked.find((d) => d.prescription && d.prescription.status !== 'discontinued');
+  if (!isClinician && prescribed && /\b(stop|stopping|quit|skip|come off|cut back|(lower|change|reduce) (my |the )?dose)\b/i.test(input.message)) {
+    shortAnswer.unshift(
+      `**Don't stop or change ${drugText(prescribed.name)} on your own** — call your doctor or pharmacist first. Tell them what you're noticing; they may adjust your treatment. If you have severe symptoms, get medical care right away.`,
+    );
   }
   if (shortAnswer.length > 0) blocks.push(`${heading(isClinician ? 'Bottom line' : 'Short answer')}\n${shortAnswer.join('\n\n')}`);
 
@@ -509,8 +594,10 @@ function medicationAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
       const allergic = bundle.allergyWarnings.some((a) => a.drug === drug.name);
       const wantsDosing = !allergic && (aspect === 'dosing' || !comboQuestion);
       if (wantsDosing) {
-        const dosing = summaryToText(summarizeSection(drug.label.sections.dosage, 380, 5), { plain: !isClinician });
-        if (dosing) facts.push(`**How it's usually taken (label):** ${dosing}${cite(labelId)}`);
+        const dosing = labelDosing(drug, isClinician, input.message);
+        if (dosing) facts.push(`**How it's usually taken (${dosing.source}):** ${dosing.text}${cite(labelId)}`);
+        if (!isClinician && otcLabel) facts.push('Pill counts depend on the strength — follow the Drug Facts label on your own package, or ask a pharmacist.');
+        else if (!isClinician && !drug.prescription) facts.push('Your dose is set by your prescriber — ask them or your pharmacist before changing how much you take.');
       }
       if (drug.prescription) {
         facts.push(`**Your prescription:** ${describePrescription(drug.prescription)} Always follow your own prescription label — it's tailored to you.`);
@@ -540,7 +627,7 @@ function medicationAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
     } else if (!bundle.offline) {
       facts.push(`I couldn't find an FDA label for ${drug.displayName} just now${lookupDrug(drug.name)?.classes.includes('supplement') ? ' (supplements usually don’t have FDA drug labels)' : ''}.`);
     }
-    const title = comboQuestion ? `About ${drug.displayName.toLowerCase()}` : `${drug.displayName} at a glance`;
+    const title = comboQuestion ? `About ${drugText(drug.name)}` : `${drug.displayName} at a glance`;
     blocks.push([heading(title), ...lines, facts.length > 0 ? bullets(facts) : ''].filter(Boolean).join('\n'));
   }
 
@@ -550,7 +637,9 @@ function medicationAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
     const refs = names2.slice(0, 2).map((n) => cite(bundle.sources.add(dailyMedSearch(n)))).join('');
     const home = cite(bundle.sources.add(DRUG_INFO_HOME));
     blocks.push(
-      `You can read the full FDA label on DailyMed and plain-language drug guides on MedlinePlus.${refs}${home} Your pharmacist can also check this for you in a minute or two — it's free.`,
+      isClinician
+        ? `Full prescribing information is on DailyMed; MedlinePlus has patient-friendly drug guides to share.${refs}${home}`
+        : `You can read the full FDA label on DailyMed and plain-language drug guides on MedlinePlus.${refs}${home} Your pharmacist can also check this for you in a minute or two — it's free.`,
     );
   }
 
@@ -566,8 +655,8 @@ function medicationAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
     const context = bundle.conditionWarnings.length > 0 ? ', given my health conditions' : '';
     questions.push(
       otherDrug
-        ? `Is it safe for me to take ${asked[0]!.name} ${onIt ? "while I'm on" : 'with'} ${otherDrug.name}${context}?`
-        : `Is ${asked[0]!.name} safe with the other medicines I take?`,
+        ? `Is it safe for me to take ${drugText(asked[0]!.name)} ${onIt ? "while I'm on" : 'with'} ${drugText(otherDrug.name)}${context}?`
+        : `Is ${drugText(asked[0]!.name)} safe with the other medicines I take?`,
     );
     if (asked.some((d) => d.classes.includes('nsaid'))) questions.push('Is there a pain reliever that is a better fit with my medicines and health conditions?');
     questions.push('If I do take it, what dose and for how long — and what side effects should make me stop and call you?');
@@ -577,8 +666,13 @@ function medicationAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
     questions.push(`Should I be tested to find out whether I'm truly allergic to ${a.allergy.toLowerCase()}?`);
     questions.push('What reactions should I watch for, and when should I get emergency help?');
   } else if (asked[0]) {
-    const name = asked[0].displayName.toLowerCase();
-    questions.push(`What should I do if I miss a dose of ${name}?`);
+    const name = drugText(asked[0].name);
+    // "Missed a dose" fits scheduled prescriptions, not an as-needed pain reliever.
+    if (asked[0].label?.productType?.includes('OTC') && !asked[0].prescription) {
+      questions.push(`How much ${name} is safe for me in a day, with my other medicines and health conditions?`);
+    } else {
+      questions.push(`What should I do if I miss a dose of ${name}?`);
+    }
     questions.push(`Which side effects of ${name} are serious enough to call you about?`);
     questions.push(`Does ${name} interact with any of my other medicines, foods or supplements?`);
   }
@@ -598,11 +692,49 @@ const SIG_FREQUENCY: Record<string, RegExp> = {
   PRN: /as needed|when needed|prn/i,
 };
 
+/** A few verified basics for common topics, used when MedlinePlus can't be reached (or evidence is offline). */
+const BUILT_IN: Record<string, { title: string; lines: string[]; after?: string; source: CitationDraft }> = {
+  'high blood pressure': {
+    title: 'Blood pressure numbers',
+    lines: [
+      'The top (systolic) number is the pressure when your heart beats; the bottom (diastolic) number is the pressure between beats.',
+      '**Normal:** less than 120 and less than 80',
+      '**Elevated:** 120–129 and less than 80',
+      '**High blood pressure, stage 1:** 130–139 or 80–89',
+      '**High blood pressure, stage 2:** 140 or higher, or 90 or higher',
+    ],
+    after:
+      'A reading of 180/120 or higher is dangerously high: rest a few minutes and recheck, and get medical care right away if it stays that high. Your doctor will tell you what goal is right for you.',
+    source: { source: 'MedlinePlus', title: 'High Blood Pressure', url: 'https://medlineplus.gov/highbloodpressure.html', publisher: 'MedlinePlus (National Library of Medicine)' },
+  },
+  'type 2 diabetes': {
+    title: 'A1c basics',
+    lines: [
+      'The A1c blood test shows your average blood sugar over the past two to three months.',
+      '**Normal:** below 5.7%',
+      '**Prediabetes:** 5.7% to 6.4%',
+      '**Diabetes:** 6.5% or higher',
+    ],
+    after: "These ranges are used to diagnose diabetes. If you already have diabetes, ask your provider what A1c goal is healthy for you.",
+    source: LAB_SOURCES.A1c!,
+  },
+};
+BUILT_IN.prediabetes = BUILT_IN['type 2 diabetes']!;
+
+/** Topics BRIAN's Lessons tab covers in depth: point there for step-by-step guidance. */
+const LESSON_TOPICS = new Set(['health insurance', 'medicare', 'medicaid', 'patient rights', 'car accident', 'botox', 'cosmetic surgery', 'teeth whitening', 'dental health', 'where to get care']);
+
+/** Health-record conditions worth asking about only for clinical, non-crisis topics. */
+const NO_CONDITION_QUESTION = new Set(['depression', 'anxiety', 'suicide']);
+
 function topicAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
   const blocks: string[] = [];
   const aspect = detectAspect(input.message, false);
   const infoCategory = bundle.triage.triage?.level === 'info' ? (bundle.triage.categories[0] as TriageCategory | undefined) : undefined;
   const refId = bundle.triageSourceIds[0] ?? bundle.topics[0]?.sourceId ?? null;
+  const detectedTopics: HealthTopic[] = detectTopics(input.message);
+  const lessonTopics: HealthTopic[] = input.lessonTitle ? detectTopics(input.lessonTitle) : [];
+  const mainTopic = detectedTopics[0] ?? lessonTopics[0] ?? null;
 
   if (infoCategory) {
     const info = CATEGORY_INFO[infoCategory];
@@ -622,7 +754,7 @@ function topicAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
     }
   }
 
-  const detail = topicDetail(bundle, aspect);
+  const detail = topicDetail(bundle, aspect, input.message);
   if (detail && detail.body) {
     blocks.push(`${heading(infoCategory ? `More about ${detail.title.toLowerCase()}` : detail.title)}\n${detail.body}`);
     const sectionIsSigns = infoCategory && CATEGORY_INFO[infoCategory].signs && /symptom|sign/i.test(detail.section?.heading ?? '');
@@ -631,16 +763,25 @@ function topicAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
     if (second) blocks.push(`Related: **${second.title}** — ${second.text}${cite(second.id)}`);
   }
 
-  // Terms the person asked about ("what does BID mean?").
-  const terms = findGlossaryTerms(input.message)
-    .map((m) => m.entry)
-    .filter((entry, i, all) => all.indexOf(entry) === i)
-    .slice(0, 5);
-  if (terms.length > 0 && isGlossaryQuestion(input.message)) {
+  // Built-in basics when MedlinePlus had nothing (offline or unreachable).
+  const builtIn = !detail && !infoCategory && mainTopic ? BUILT_IN[mainTopic.key] : undefined;
+  if (builtIn) {
+    const id = bundle.sources.add(builtIn.source);
+    blocks.push(`${heading(builtIn.title)}\n${bullets(builtIn.lines)}${cite(id)}${builtIn.after ? `\n\n${builtIn.after}` : ''}`);
+  }
+  if (mainTopic && LESSON_TOPICS.has(mainTopic.key) && !input.lessonTitle && (!detail || mainTopic.nonClinical)) {
+    blocks.push("BRIAN's **Lessons** tab has a plain-language lesson on this — open it for step-by-step guidance.");
+  }
+  if (mainTopic?.note) blocks.push(`${mainTopic.note}${mainTopic.noteSource ? cite(bundle.sources.add(mainTopic.noteSource)) : ''}`);
+
+  // Terms the person asked the meaning of ("what does BID mean?").
+  const terms = glossaryQuestionTerms(input.message).slice(0, 5);
+  if (terms.length > 0) {
     const lab = terms.map((t) => LAB_SOURCES[t.term]).find(Boolean);
     const id = lab ? bundle.sources.add(lab) : bundle.sources.add(MEDICAL_WORDS);
     const extra: string[] = [];
-    for (const term of terms.filter((t) => t.kind === 'sig')) {
+    const sigs = terms.filter((t) => t.kind === 'sig');
+    for (const term of sigs) {
       const key = SIG_FREQUENCY[term.term];
       const matching = (input.patient?.medications ?? []).filter((rx) => key && key.test(`${rx.frequency} ${rx.instructions}`));
       if (matching.length > 0) {
@@ -651,8 +792,9 @@ function topicAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
         extra.push(`For example, "1 tablet PO ${term.term}" means take 1 tablet by mouth ${term.plain}.`);
       }
     }
-    extra.push('Pharmacists are glad to explain any abbreviation on a prescription label — just ask at the counter.');
-    blocks.unshift(`${heading('In plain words')}\n${bullets(terms.map((t) => `**${t.term}** — ${t.definition}`))}${cite(id)}\n\n${extra.join('\n\n')}`);
+    // Prescription-label shorthand: the pharmacist is the right person to ask.
+    if (sigs.length > 0) extra.push('Pharmacists are glad to explain any abbreviation on a prescription label — just ask at the counter.');
+    blocks.unshift(`${heading('In plain words')}\n${bullets(terms.map((t) => `**${t.term}** — ${t.definition}`))}${cite(id)}${extra.length > 0 ? `\n\n${extra.join('\n\n')}` : ''}`);
   }
 
   if (input.mode === 'symptoms' && !bundle.triage.triage) {
@@ -665,7 +807,7 @@ function topicAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
     );
   }
 
-  if (!detail && !infoCategory && terms.length === 0) {
+  if (!detail && !infoCategory && terms.length === 0 && !builtIn) {
     const fallback = limitedEvidenceNote(bundle);
     blocks.push(
       fallback ??
@@ -676,7 +818,7 @@ function topicAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
   const r = researchSection(bundle, input.role === 'doctor' ? 5 : 3, input.role === 'doctor');
   if (r) blocks.push(r);
 
-  const detected = detectTopics(input.message)[0]?.key ?? null;
+  const detected = mainTopic?.key ?? null;
   const lessonTopic = input.lessonTitle && !/\?$/.test(input.lessonTitle) ? input.lessonTitle.toLowerCase() : null;
   const titleTopic = detail && !/\?$/.test(detail.title) ? detail.title.toLowerCase() : null;
   const topicName = detected ?? lessonTopic ?? titleTopic;
@@ -690,13 +832,16 @@ function topicAnswer(input: ChatInput, bundle: EvidenceBundle): string[] {
       questions.push(`How do my ${listJoin(input.patient.conditions.slice(0, 3).map((c) => c.toLowerCase()))} affect my risk?`);
     }
     questions.push('Which warning signs should my family know, and what should they do?');
+  } else if (infoCategory === 'suicide') {
+    questions.push('Can we talk about how I have been feeling, and what support is available?', 'Who can I call between visits if things get harder?');
+  } else if (mainTopic?.nonClinical) {
+    // Insurance, rights and "where do I go" questions are for the plan, the clinic or a lawyer — not health conditions.
   } else if (topicName) {
     questions.push(`What does this mean for me, given my health history?`);
     questions.push('What are the most important next steps for me?');
+    const clinical = !infoCategory && mainTopic !== null && !NO_CONDITION_QUESTION.has(mainTopic.key) && !LESSON_TOPICS.has(mainTopic.key);
     const condition = input.patient?.conditions.find((c) => !detectTopics(c).some((t) => t.key === detected));
-    if (condition && input.patient?.conditions.length) {
-      questions.push(`Does my ${condition.toLowerCase()} change anything about this?`);
-    }
+    if (clinical && condition) questions.push(`Does my ${condition.toLowerCase()} change anything about this?`);
   }
   const q = questionsSection(questions);
   if (q && input.role !== 'doctor') blocks.push(q);
@@ -751,11 +896,13 @@ export function mockRespond(input: ChatInput, bundle: EvidenceBundle, options: M
   const noteBody = input.note?.body ?? (looksLikeClinicalNote(input.message) ? input.message : null);
   const asked = bundle.drugs.filter((d) => d.role === 'asked');
   const emergency = triage?.level === 'emergency';
+  // After too much medicine, usual dosing and "missed a dose?" tips are the wrong answer: the triage steps cover it.
+  const tookTooMuch = liveConcern && bundle.triage.categories.some((c) => c === 'overdose' || c === 'extra-dose' || c === 'battery');
 
   if (!emergency) {
     if (noteBody && (input.mode === 'explain-note' || !input.note || looksLikeClinicalNote(input.message) || asked.length === 0)) {
       blocks.push(...noteAnswer(input, bundle, noteBody, input.note?.title ?? null));
-    } else if (asked.length > 0) {
+    } else if (asked.length > 0 && !tookTooMuch) {
       blocks.push(...medicationAnswer(input, bundle));
       if (input.role === 'doctor') {
         const evidence = clinicianEvidence(bundle);
@@ -763,16 +910,17 @@ export function mockRespond(input: ChatInput, bundle: EvidenceBundle, options: M
       }
     } else if (input.role === 'doctor' && !liveConcern) {
       blocks.push(...clinicianTopicAnswer(bundle));
-    } else if (!liveConcern || bundle.topics.length > 0) {
+    } else if (!liveConcern) {
       // An urgent answer already covers next steps and questions.
-      if (!liveConcern) blocks.push(...topicAnswer(input, bundle));
+      blocks.push(...topicAnswer(input, bundle));
     }
   }
 
   const limited = limitedEvidenceNote(bundle);
   if (limited && !blocks.some((b) => b.includes(limited))) blocks.push(limited);
-  blocks.push(safetyLine(input));
-  blocks.push(footer(options));
+  const safety = safetyLine(input);
+  if (safety) blocks.push(safety);
+  if (options.fallbackReason) blocks.push(options.fallbackReason);
   return blocks.filter((b) => b.trim().length > 0).join('\n\n');
 }
 

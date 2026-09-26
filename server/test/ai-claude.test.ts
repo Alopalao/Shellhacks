@@ -7,7 +7,7 @@ import type {
   MessageCreateParamsNonStreaming,
 } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import { describe, expect, it } from 'vitest';
-import { ClaudeResponder, FALLBACK_BETA, MAX_TOOL_ROUNDS, type ClaudeClientLike, type ToolRuntime } from '../src/ai/claude';
+import { ClaudeDeadlineError, ClaudeResponder, FALLBACK_BETA, MAX_TOOL_ROUNDS, type ClaudeClientLike, type ToolRuntime } from '../src/ai/claude';
 import { AiService } from '../src/ai/service';
 import type { User } from '../src/shared/contracts';
 import { makeDb, stubEvidence, testConfig } from './ai-fixtures';
@@ -147,6 +147,36 @@ describe('ClaudeResponder', () => {
     expect(requests[1]).not.toHaveProperty('betas');
     expect(requests[2]).not.toHaveProperty('betas');
   });
+
+  it('rethrows other 400s without turning the fallback off', async () => {
+    const tooLong = new Anthropic.BadRequestError(400, { type: 'error', error: { type: 'invalid_request_error', message: 'prompt is too long: 250000 tokens > 200000 maximum' } }, 'prompt is too long', new Headers());
+    const { client, requests } = fakeClient([tooLong, message([text('Later')], 'end_turn')]);
+    const responder = new ClaudeResponder(client);
+    await expect(responder.run({ ...baseRun, tools: null })).rejects.toBe(tooLong);
+    expect(requests).toHaveLength(1); // no pointless identical retry
+    expect(await responder.run({ ...baseRun, tools: null })).toMatchObject({ text: 'Later' });
+    expect(requests[1]).toMatchObject({ betas: [FALLBACK_BETA], fallbacks: 'default' });
+  });
+
+  it('respects the overall answer deadline', async () => {
+    // Close to the deadline: no more tool rounds, and per-call timeouts shrink to what's left.
+    const options: Array<{ timeout?: number; maxRetries?: number } | undefined> = [];
+    const near = fakeClient([message([text('Quick answer')], 'end_turn')]);
+    const create = near.client.beta.messages.create;
+    near.client.beta.messages.create = (params, opts) => {
+      options.push(opts);
+      return create(params, opts);
+    };
+    const result = await new ClaudeResponder(near.client).run({ ...baseRun, tools: runtime(async () => 'ok'), deadline: Date.now() + 20_000 });
+    expect(result).toMatchObject({ kind: 'text', text: 'Quick answer' });
+    expect(near.requests[0]?.tool_choice).toEqual({ type: 'none' });
+    expect(options[0]?.timeout).toBeLessThanOrEqual(20_000);
+    expect(options[0]?.maxRetries).toBe(0);
+    // Past the deadline: don't start another call.
+    const late = fakeClient([message([text('never')], 'end_turn')]);
+    await expect(new ClaudeResponder(late.client).run({ ...baseRun, tools: null, deadline: Date.now() + 1_000 })).rejects.toBeInstanceOf(ClaudeDeadlineError);
+    expect(late.requests).toHaveLength(0);
+  });
 });
 
 describe('AiService with Claude', () => {
@@ -172,6 +202,8 @@ describe('AiService with Claude', () => {
     expect(userTurn).toContain('<patient_context>');
     expect(userTurn).toContain('Allergies: Penicillin');
     expect(userTurn).toContain('<triage level="info">');
+    expect(userTurn).toContain('Rule-based hint only'); // the model still judges the message itself
+    expect(requests[0]!.system).toContain('Check every message yourself for a possible emergency');
     expect(userTurn).toMatch(/<sources>\n\[1\] Stroke/);
     expect(requests[0]!.system).toContain('BRIAN, "your AI health guide,"');
     expect(requests[0]!.system).not.toContain('Maya'); // volatile context stays out of the system prompt
@@ -200,11 +232,19 @@ describe('AiService with Claude', () => {
     expect(warnings[0]).toMatch(/rate limited/);
   });
 
+  it('does not save the turn when the app has already given up', async () => {
+    const { service, maya } = setup([message([text('Too late.')], 'end_turn')]);
+    const gone = new AbortController();
+    gone.abort();
+    await expect(service.chat(maya, { message: 'what are the signs of a stroke?' }, { signal: gone.signal })).rejects.toMatchObject({ status: 499 });
+    expect(service.listConversations(maya)).toHaveLength(0);
+  });
+
   it('uses the safe mock answer when the model declines', async () => {
     const { service, maya } = setup([message([], 'refusal', { stop_details: { type: 'refusal', category: null, explanation: null } })]);
     const { reply } = await service.chat(maya, { message: 'what are the signs of a stroke?' });
     expect(reply.mocked).toBe(true);
-    expect(reply.content).toContain('BE FAST');
+    expect(reply.content).toContain('think F.A.S.T.');
     expect(reply.content).toContain("BRIAN's AI model couldn't answer this one");
   });
 

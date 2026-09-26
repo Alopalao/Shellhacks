@@ -72,6 +72,8 @@ export interface DrugLabel {
   effectiveDate: string | null; // YYYYMMDD
   rxcuis: string[];
   pharmClasses: string[];
+  /** Strength and form of one unit from the Drug Facts "Active ingredient" box ("500 mg caplet"), when stated. */
+  strength?: string | null;
   /** Cleaned section text (headings and cross-references removed). */
   sections: Partial<Record<LabelSectionKey, string>>;
   dailyMedUrl: string;
@@ -101,7 +103,14 @@ export interface EvidenceClient {
   medlinePlusDrug(input: { name: string; rxcui?: string | null; /** dosage form, picks e.g. "Oral Inhalation" */ form?: string | null }): Promise<MedlinePlusDrugPage | null>;
   drugLabel(
     name: string,
-    options?: { rxcui?: string | null; preferOtc?: boolean; /** e.g. "tablet", "inhaler" */ form?: string | null },
+    options?: {
+      rxcui?: string | null;
+      preferOtc?: boolean;
+      /** e.g. "tablet", "inhaler" */
+      form?: string | null;
+      /** The prescription or question names an extended-release product (otherwise immediate-release is preferred). */
+      extendedRelease?: boolean;
+    },
   ): Promise<DrugLabel | null>;
   normalizeDrug(term: string): Promise<NormalizedDrug | null>;
   /** RxCUI when `term` is exactly (or normalized-exactly) an RxNorm concept name. */

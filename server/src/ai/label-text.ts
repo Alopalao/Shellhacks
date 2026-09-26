@@ -51,8 +51,13 @@ const REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bdiscontinue\b/gi, 'stop'],
   [/\binitiat(e|ing) (therapy|treatment)\b/gi, 'starting treatment'],
   [/\badjunct therapy\b/gi, 'add-on treatment'],
-  [/\badjunct to\b/gi, 'added to'],
+  // "indicated as an adjunct to diet and exercise" → "indicated along with diet and exercise".
+  [/\bas (an )?adjunct to\b/gi, 'along with'],
+  [/\ban adjunct to\b/gi, 'an addition to'],
+  [/\badjunct to\b/gi, 'in addition to'],
   [/\bNSAIDS\b/g, 'NSAIDs'],
+  [/\bpotentiates?\b/gi, 'strengthens'],
+  [/\blactate metabolism\b/gi, 'lactic acid levels'],
 ];
 
 /** Swaps common label jargon for plain words (keeps the original term where it helps). */
@@ -66,7 +71,12 @@ export function plainLabel(text: string): string {
       return /^[A-Z][a-z]/.test(match) ? value.charAt(0).toUpperCase() + value.slice(1) : value;
     });
   }
-  return collapseWhitespace(out.replace(/\(incidence\s*[≥>]=?\s*(\d+(?:\.\d+)?)%\)/g, '(in $1% or more of people)'));
+  return collapseWhitespace(
+    out
+      .replace(/\(incidence\s*[≥>]=?\s*(\d+(?:\.\d+)?)%\)/g, '(in $1% or more of people)')
+      // Superscripts flattened by the label feed: "1.73 m 2" → "1.73 m²".
+      .replace(/(\d\.\d+)\s?m\s?2\b/g, '$1 m²'),
+  );
 }
 
 const BOILERPLATE_INTRO = /described (below|elsewhere)|elsewhere in (the )?label|following (important )?adverse reactions|see full prescribing/i;

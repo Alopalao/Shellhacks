@@ -20,6 +20,7 @@ import {
   useToast,
 } from '@/components/ui';
 import { useApiQuery } from '@/hooks/useApiQuery';
+import { useDraft } from '@/hooks/useDraft';
 import { api, errorMessage } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import type { User } from '@/lib/contracts';
@@ -60,14 +61,42 @@ function sameList(a: readonly string[], b: readonly string[]) {
   return a.length === b.length && a.every((v, i) => v === b[i]);
 }
 
+interface PatientDraft {
+  name: string;
+  dob: string;
+  allergies: string[];
+  conditions: string[];
+  pharmacy: string;
+}
+
+function patientDraft(user: User): PatientDraft {
+  const p = user.patient;
+  return {
+    name: user.name,
+    dob: p?.dateOfBirth ?? '',
+    allergies: p?.allergies ?? [],
+    conditions: p?.conditions ?? [],
+    pharmacy: p?.pharmacy ?? '',
+  };
+}
+
+/** Equal as far as saving goes (text fields are trimmed on save). */
+function samePatientDraft(a: PatientDraft, b: PatientDraft) {
+  return (
+    a.name.trim() === b.name.trim() &&
+    a.dob.trim() === b.dob.trim() &&
+    sameList(a.allergies, b.allergies) &&
+    sameList(a.conditions, b.conditions) &&
+    a.pharmacy.trim() === b.pharmacy.trim()
+  );
+}
+
 function PatientDetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) => void }) {
   const toast = useToast();
-  const profile = user.patient;
-  const [name, setName] = useState(user.name);
-  const [dob, setDob] = useState(profile?.dateOfBirth ?? '');
-  const [allergies, setAllergies] = useState<string[]>(profile?.allergies ?? []);
-  const [conditions, setConditions] = useState<string[]>(profile?.conditions ?? []);
-  const [pharmacy, setPharmacy] = useState(profile?.pharmacy ?? '');
+  // Follows the saved profile (e.g. after "Reset demo data") unless there are unsaved edits.
+  const [draft, setDraft] = useDraft(patientDraft(user), samePatientDraft);
+  const { name, dob, allergies, conditions, pharmacy } = draft;
+  const edit = <K extends keyof PatientDraft>(key: K) => (value: PatientDraft[K]) => setDraft((d) => ({ ...d, [key]: value }));
   const [saving, setSaving] = useState(false);
 
   const dobTrim = dob.trim();
@@ -80,12 +109,7 @@ function PatientDetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) 
         : null;
   const nameError = name.trim() ? null : 'Your name can’t be empty.';
 
-  const dirty =
-    name.trim() !== user.name ||
-    dobTrim !== (profile?.dateOfBirth ?? '') ||
-    !sameList(allergies, profile?.allergies ?? []) ||
-    !sameList(conditions, profile?.conditions ?? []) ||
-    pharmacy.trim() !== (profile?.pharmacy ?? '');
+  const dirty = !samePatientDraft(draft, patientDraft(user));
 
   const save = async () => {
     if (dobError || nameError) return;
@@ -102,6 +126,8 @@ function PatientDetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) 
         },
       });
       onSaved(updated);
+      // Show exactly what the server stored (unless the user kept typing while it saved).
+      setDraft((d) => (samePatientDraft(d, draft) ? patientDraft(updated) : d));
       toast.success('Profile saved', 'Your doctor and BRIAN AI will use the updated details.');
     } catch (e) {
       toast.error('Couldn’t save your profile', errorMessage(e));
@@ -117,11 +143,11 @@ function PatientDetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) 
         icon="person-outline"
         subtitle="BRIAN uses your allergies and conditions to tailor answers. Your doctor sees them too."
       />
-      <Input label="Full name" value={name} onChangeText={setName} autoComplete="name" error={nameError} />
+      <Input label="Full name" value={name} onChangeText={edit('name')} autoComplete="name" error={nameError} />
       <Input
         label="Date of birth"
         value={dob}
-        onChangeText={setDob}
+        onChangeText={edit('dob')}
         placeholder="YYYY-MM-DD"
         keyboardType="numbers-and-punctuation"
         autoComplete="birthdate-full"
@@ -132,7 +158,7 @@ function PatientDetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) 
       <TagInput
         label="Allergies"
         values={allergies}
-        onChange={setAllergies}
+        onChange={edit('allergies')}
         placeholder="Add an allergy (e.g. Penicillin)"
         suggestions={ALLERGY_SUGGESTIONS}
         emptyText="No known allergies"
@@ -140,7 +166,7 @@ function PatientDetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) 
       <TagInput
         label="Conditions"
         values={conditions}
-        onChange={setConditions}
+        onChange={edit('conditions')}
         placeholder="Add a condition"
         suggestions={CONDITION_SUGGESTIONS}
         emptyText="No conditions listed"
@@ -149,7 +175,7 @@ function PatientDetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) 
         label="Pharmacy"
         optional
         value={pharmacy}
-        onChangeText={setPharmacy}
+        onChangeText={edit('pharmacy')}
         placeholder="e.g. CVS Pharmacy — Main St"
         leftIcon="storefront-outline"
       />

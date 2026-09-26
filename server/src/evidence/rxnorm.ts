@@ -8,12 +8,23 @@ import { collapseWhitespace } from './text';
 
 const RXNAV = 'https://rxnav.nlm.nih.gov/REST';
 const INGREDIENT_TTYS = new Set(['IN', 'PIN', 'MIN']);
+/**
+ * Term types that name a medicine: ingredients, brands, and clinical/branded drugs and packs.
+ * Dose-form groups ("Pill" = DFG), dose forms ("Injection" = DF) and the like are not drugs.
+ */
+const DRUG_TTYS = new Set(['IN', 'PIN', 'MIN', 'BN', 'SCD', 'SBD', 'SCDC', 'SBDC', 'SCDF', 'SBDF', 'GPCK', 'BPCK']);
 
 /** Words RxNorm knows as concepts that are almost never meant as a drug in chat. */
 const NON_DRUG_WORDS = new Set([
   'water', 'sugar', 'salt', 'gold', 'alcohol', 'oxygen', 'air', 'coffee', 'tea', 'milk', 'honey', 'rice',
   'corn', 'wheat', 'egg', 'eggs', 'peanut', 'soy', 'fish', 'beef', 'pork', 'chicken', 'food', 'juice',
   'vinegar', 'glucose', 'protein', 'fiber', 'fat', 'sun', 'light', 'heat', 'ice', 'sleep', 'blood', 'urine',
+  // Dose forms and generic words for medicine.
+  'pill', 'pills', 'tablet', 'tablets', 'tab', 'tabs', 'capsule', 'capsules', 'cap', 'caps', 'caplet', 'caplets',
+  'gelcap', 'gelcaps', 'softgel', 'softgels', 'cream', 'creams', 'ointment', 'lotion', 'gel', 'injection', 'injections',
+  'shot', 'shots', 'drops', 'drop', 'patch', 'patches', 'spray', 'liquid', 'syrup', 'solution', 'suspension', 'powder',
+  'gummy', 'gummies', 'vitamin', 'vitamins', 'medicine', 'medicines', 'medication', 'medications', 'meds', 'drug',
+  'drugs', 'dose', 'doses', 'inhaler', 'lozenge', 'lozenges', 'suppository', 'chewable', 'oral', 'topical',
 ]);
 
 export class RxNormClient {
@@ -24,11 +35,15 @@ export class RxNormClient {
     return response.status === 404 ? null : parseJson(response.text);
   }
 
+  /** RxCUI when `term` names a medicine concept (not a dose form such as "pills" or "injection"). */
   async exactRxcui(term: string): Promise<string | null> {
     const name = collapseWhitespace(term).toLowerCase();
     if (!name || NON_DRUG_WORDS.has(name)) return null;
     const body = await this.json('/rxcui.json', { name, search: 2 });
-    return strings(rec(body, 'idGroup'), 'rxnormId')[0] ?? null;
+    const rxcui = strings(rec(body, 'idGroup'), 'rxnormId')[0] ?? null;
+    if (!rxcui) return null;
+    const props = await this.properties(rxcui);
+    return props && DRUG_TTYS.has(props.tty) ? rxcui : null;
   }
 
   async approximateRxcui(term: string): Promise<string | null> {

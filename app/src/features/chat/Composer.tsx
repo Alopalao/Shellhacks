@@ -91,6 +91,7 @@ export function Composer({ value, onChangeText, onSend, disabled, placeholder, a
             accessibilityLabel="Message"
             accessibilityHint={isWeb ? 'Press Enter to send, Shift and Enter for a new line' : undefined}
             accessibilityState={{ disabled: !!disabled }}
+            aria-disabled={!!disabled}
             selectionColor={colors.black}
             cursorColor={colors.black}
             textAlignVertical="center"

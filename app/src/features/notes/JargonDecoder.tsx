@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Card } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 import { JARGON_CATEGORY_LABEL, type JargonMatch } from './glossary';
@@ -11,6 +11,9 @@ export interface JargonDecoderProps {
   /** Toggle a term (highlights it in the note). */
   onSelect?: (match: JargonMatch) => void;
 }
+
+/** Width of the term pills (fits "well controlled" on two lines and most terms on one). */
+const TERM_COLUMN_WIDTH = 104;
 
 /** "Jargon decoder": each abbreviation found in the note with its plain meaning. */
 export function JargonDecoder({ matches, selectedKey, onSelect }: JargonDecoderProps) {
@@ -45,7 +48,7 @@ export function JargonDecoder({ matches, selectedKey, onSelect }: JargonDecoderP
             const content = (
               <>
                 <View style={[styles.termPill, selected && styles.termPillSelected]}>
-                  <AppText variant="label" numberOfLines={1}>
+                  <AppText variant="label" style={styles.termText}>
                     {m.term}
                   </AppText>
                 </View>
@@ -70,6 +73,8 @@ export function JargonDecoder({ matches, selectedKey, onSelect }: JargonDecoderP
                 accessibilityLabel={label}
                 accessibilityHint="Highlights this term in the note"
                 accessibilityState={{ selected }}
+                // react-native-web ignores accessibilityState; expose the toggle state to web screen readers.
+                aria-pressed={Platform.OS === 'web' ? selected : undefined}
                 style={({ pressed }) => [styles.row, selected && styles.rowSelected, pressed && styles.rowPressed]}
               >
                 {content}
@@ -111,9 +116,9 @@ const styles = StyleSheet.create({
   },
   rowSelected: { backgroundColor: colors.yellowLight },
   rowPressed: { backgroundColor: colors.yellowLighter },
+  // Fixed width so every meaning starts at the same left edge; long terms wrap inside the pill.
   termPill: {
-    minWidth: 64,
-    maxWidth: 120,
+    width: TERM_COLUMN_WIDTH,
     alignItems: 'center',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
@@ -123,4 +128,5 @@ const styles = StyleSheet.create({
     borderColor: colors.yellowBorder,
   },
   termPillSelected: { backgroundColor: colors.yellow, borderColor: colors.black },
+  termText: { textAlign: 'center' },
 });

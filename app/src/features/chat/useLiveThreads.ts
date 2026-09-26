@@ -1,11 +1,11 @@
 // GET /api/threads kept live: new messages bump previews/unread counts and re-order the list,
-// reads clear unread counts, profile edits refresh the counterpart. Also mirrors the total unread
-// count onto the Care (patient) / Messages (doctor) tab badge.
+// reads clear unread counts, profile edits refresh the counterpart, and doctor changes refetch the
+// list. Also mirrors the total unread count onto the Care (patient) / Messages (doctor) tab badge.
 import { useEffect, useMemo } from 'react';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import type { ChatMessage, Role, Thread } from '@/lib/contracts';
+import type { ChatMessage, Role, Thread, User } from '@/lib/contracts';
 import { useSocketEvent } from '@/lib/socket';
 import { setTabBadge, type TabBadgeKey } from '@/lib/tab-badges';
 
@@ -34,6 +34,19 @@ function applyNewMessage(thread: Thread, message: ChatMessage, me: string): Thre
     lastMessage: newer ? message : thread.lastMessage,
     unreadCount: message.senderId !== me && !message.readAt ? thread.unreadCount + 1 : thread.unreadCount,
   };
+}
+
+/**
+ * True when a `user:updated` for a patient changes which threads `me` has: the patient's thread is
+ * with another doctor now (they switched away from me, or I'm that patient and switched), or the
+ * patient was assigned to me (or I'm the patient and just got a doctor) and there's no thread yet.
+ */
+export function threadsChangedBy(threads: readonly Thread[], updated: User, me: string): boolean {
+  if (updated.role !== 'patient') return false;
+  const assigned = updated.doctorId ?? null;
+  const current = threads.find((t) => t.patientId === updated.id);
+  if (current) return current.doctorId !== assigned;
+  return assigned !== null && (assigned === me || updated.id === me);
 }
 
 export interface LiveThreads {
@@ -80,6 +93,12 @@ export function useLiveThreads(options: { syncTabBadge?: boolean } = {}): LiveTh
   });
 
   useSocketEvent('user:updated', (updated) => {
+    if (me && data && threadsChangedBy(data, updated, me)) {
+      // A patient switched physicians (or a new patient was assigned to me): threads were added or
+      // removed, so fetch the list again instead of patching it.
+      void reload();
+      return;
+    }
     setData((prev) => prev?.map((t) => (t.counterpart.id === updated.id ? { ...t, counterpart: updated } : t)));
   });
 

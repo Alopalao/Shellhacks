@@ -1,9 +1,10 @@
+import { usePathname } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 import { StyleSheet, View } from 'react-native';
+import { activeTabOptions, renderAppTabBar } from '@/components/navigation/AppTabBar';
 import { RoleGuard } from '@/components/navigation/RoleGuard';
 import { tabIcon } from '@/components/navigation/TabIcon';
-import { tabScreenOptions } from '@/components/navigation/options';
-import { ConnectionBanner } from '@/components/ui';
+import { tabAccessibilityLabel, useTabScreenOptions } from '@/components/navigation/options';
 import { ChatBadgeSync } from '@/features/chat';
 import { useActivityRecorder } from '@/features/doctor';
 import { useTabBadges } from '@/lib/tab-badges';
@@ -18,23 +19,40 @@ export default function DoctorLayout() {
 
 function DoctorTabs() {
   const badges = useTabBadges();
-  // Record the Inbox's live activity feed for the whole session, not just once a tab has mounted.
+  const screenOptions = useTabScreenOptions();
+  // A patient's chart, prescribe and note screens live in the hidden `patients` tab; keep
+  // "Patients" highlighted there so the doctor doesn't lose their place.
+  const onPatientRoute = usePathname().startsWith('/doctor/patients');
+  // Keep the Inbox live for the whole session (activity feed + Inbox tab badge), not just once a tab has mounted.
   useActivityRecorder();
   return (
     <View style={styles.flex}>
-      <Tabs screenOptions={tabScreenOptions} backBehavior="history">
+      {/* The tab bar carries the "Reconnecting…" banner above it (renderAppTabBar). */}
+      <Tabs screenOptions={screenOptions} tabBar={renderAppTabBar} backBehavior="history">
         <Tabs.Screen
           name="index"
-          options={{ title: 'Patients', tabBarIcon: tabIcon('people-outline', 'people'), tabBarBadge: badges['doctor/index'] }}
+          options={{
+            title: 'Patients',
+            tabBarAccessibilityLabel: tabAccessibilityLabel('Patients', badges['doctor/index']),
+            tabBarIcon: tabIcon('people-outline', 'people'),
+            tabBarBadge: badges['doctor/index'],
+            ...(onPatientRoute ? activeTabOptions('people-outline', 'people') : null),
+          }}
         />
         <Tabs.Screen
           name="inbox"
-          options={{ title: 'Inbox', tabBarIcon: tabIcon('file-tray-outline', 'file-tray'), tabBarBadge: badges['doctor/inbox'] }}
+          options={{
+            title: 'Inbox',
+            tabBarAccessibilityLabel: tabAccessibilityLabel('Inbox', badges['doctor/inbox'], { noun: 'pending' }),
+            tabBarIcon: tabIcon('file-tray-outline', 'file-tray'),
+            tabBarBadge: badges['doctor/inbox'],
+          }}
         />
         <Tabs.Screen
           name="messages"
           options={{
             title: 'Messages',
+            tabBarAccessibilityLabel: tabAccessibilityLabel('Messages', badges['doctor/messages'], { noun: 'unread' }),
             tabBarIcon: tabIcon('chatbubbles-outline', 'chatbubbles'),
             tabBarBadge: badges['doctor/messages'],
           }}
@@ -43,20 +61,27 @@ function DoctorTabs() {
           name="ai"
           options={{
             title: 'Evidence AI',
-            tabBarAccessibilityLabel: 'Evidence AI for clinicians',
+            tabBarAccessibilityLabel: tabAccessibilityLabel('Evidence AI', badges['doctor/ai'], {
+              label: 'Evidence AI for clinicians',
+              noun: 'new answer',
+            }),
             tabBarIcon: tabIcon('flask-outline', 'flask'),
             tabBarBadge: badges['doctor/ai'],
           }}
         />
         <Tabs.Screen
           name="profile"
-          options={{ title: 'Profile', tabBarIcon: tabIcon('person-circle-outline', 'person-circle'), tabBarBadge: badges['doctor/profile'] }}
+          options={{
+            title: 'Profile',
+            tabBarAccessibilityLabel: tabAccessibilityLabel('Profile', badges['doctor/profile']),
+            tabBarIcon: tabIcon('person-circle-outline', 'person-circle'),
+            tabBarBadge: badges['doctor/profile'],
+          }}
         />
         <Tabs.Screen name="patients" options={{ title: 'Patient', href: null, popToTopOnBlur: true }} />
       </Tabs>
       {/* Keeps the Messages tab's unread badge live from app start (tabs mount lazily). */}
       <ChatBadgeSync />
-      <ConnectionBanner />
     </View>
   );
 }

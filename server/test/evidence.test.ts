@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   cleanLabelText,
   createEvidenceClient,
+  labelCitation,
   keyFinding,
   otcWarningHighlights,
   parseConnectFeed,
@@ -52,6 +53,14 @@ describe('PubMed parsing', () => {
     const [article] = parsePubMedXml(PUBMED_XML);
     const unstructured = { ...article!, conclusion: null, abstract: 'One. Two. Three. The final result was clear. Use it wisely.' };
     expect(keyFinding(unstructured)).toBe('The final result was clear. Use it wisely.');
+  });
+
+  it('never starts a key finding on a dangling connective or back-reference', () => {
+    const [article] = parsePubMedXml(PUBMED_XML);
+    const withConnective = { ...article!, conclusion: null, abstract: 'Heart failure is common. Outcomes vary. Care improved. As a consequence, AHF is still associated with high mortality. Early decongestion helps.' };
+    expect(keyFinding(withConnective)).toBe('AHF is still associated with high mortality. Early decongestion helps.');
+    const referential = { ...article!, conclusion: null, abstract: 'SGLT2 inhibitors reduce heart failure admissions. Trials enrolled many patients. Results were consistent. These findings support use. This extends prior work.' };
+    expect(keyFinding(referential)).toBe('SGLT2 inhibitors reduce heart failure admissions.');
   });
 });
 
@@ -110,6 +119,73 @@ describe('FDA label helpers', () => {
       'Allergy alert: May cause a severe reaction.',
       'Stomach bleeding warning: Contains an NSAID.',
     ]);
+  });
+});
+
+describe('FDA label choice and text', () => {
+  const labelResult = (setId: string, extra: Record<string, unknown>, openfda: Record<string, unknown> = {}) => ({
+    set_id: setId,
+    effective_time: '20250101',
+    indications_and_usage: ['Indicated to improve glycemic control in adults with type 2 diabetes mellitus.'],
+    dosage_and_administration: ['Take with meals.'],
+    warnings_and_cautions: ['Lactic acidosis.'],
+    adverse_reactions: ['Diarrhea.'],
+    openfda: { generic_name: ['METFORMIN HYDROCHLORIDE'], brand_name: ['Metformin Hydrochloride'], substance_name: ['METFORMIN HYDROCHLORIDE'], product_type: ['HUMAN PRESCRIPTION DRUG'], ...openfda },
+    ...extra,
+  });
+
+  function labelClient(results: unknown[]) {
+    const fetchImpl: FetchLike = async (url) =>
+      decodeURIComponent(url).includes('generic_name:"metformin"') ? new Response(JSON.stringify({ results })) : new Response('{}', { status: 404 });
+    return createEvidenceClient({ offline: false }, { fetch: fetchImpl });
+  }
+
+  it('prefers the immediate-release label unless extended-release is asked for', async () => {
+    const er = labelResult('er-set', { spl_product_data_elements: ['Metformin Hydrochloride Extended-Release Tablets'], information_for_patients: ['x'] });
+    const ir = labelResult('ir-set', { spl_product_data_elements: ['Metformin Hydrochloride Tablets'] });
+    expect((await labelClient([er, ir]).drugLabel('metformin', { form: 'tablet' }))?.setId).toBe('ir-set');
+    expect((await labelClient([er, ir]).drugLabel('metformin', { form: 'tablet', extendedRelease: true }))?.setId).toBe('er-set');
+  });
+
+  it('names the strength OTC directions are written for', async () => {
+    const otc = labelResult(
+      'apap-set',
+      { active_ingredient: ['Active ingredient (in each caplet) Acetaminophen 500 mg'], dosage_and_administration: ['do not take more than 6 caplets in 24 hours'] },
+      { generic_name: ['ACETAMINOPHEN'], brand_name: ['Acetaminophen'], substance_name: ['ACETAMINOPHEN'], product_type: ['HUMAN OTC DRUG'] },
+    );
+    const fetchImpl: FetchLike = async () => new Response(JSON.stringify({ results: [otc] }));
+    const label = await createEvidenceClient({ offline: false }, { fetch: fetchImpl }).drugLabel('acetaminophen', { preferOtc: true });
+    expect(label?.strength).toBe('500 mg caplet');
+    expect(labelCitation(label!).title).toBe('Acetaminophen, 500 mg caplet — Drug Facts label');
+  });
+
+  it('keeps multi-word PLR headings together', () => {
+    const text =
+      'Intracranial Hypertension (Pseudotumor Cerebri): Avoid concomitant use with tetracyclines Serious Skin Reactions: Monitor for serious skin reactions and discontinue treatment if they occur Acute Pancreatitis: If pancreatitis symptoms occur, discontinue treatment 5.1 Embryo-Fetal Toxicity …';
+    expect(summarizeSection(text, 1000, 5).items).toEqual([
+      'Intracranial Hypertension (Pseudotumor Cerebri): Avoid concomitant use with tetracyclines',
+      'Serious Skin Reactions: Monitor for serious skin reactions and discontinue treatment if they occur',
+      'Acute Pancreatitis: If pancreatitis symptoms occur, discontinue treatment',
+    ]);
+    expect(summarizeBoxedWarning('WARNING: EMBRYO-FETAL TOXICITY - CONTRAINDICATED IN PREGNANCY Isotretinoin can cause birth defects.')).toEqual({
+      title: 'Embryo-fetal toxicity - contraindicated in pregnancy',
+      text: 'Isotretinoin can cause birth defects.',
+    });
+  });
+});
+
+describe('RxNorm names', () => {
+  it('ignores dose-form concepts such as "pills" or "injection"', async () => {
+    const fetchImpl: FetchLike = async (url) => {
+      if (url.includes('/rxcui.json')) return new Response(JSON.stringify({ idGroup: { rxnormId: [url.includes('name=pills') ? '1151133' : '1364430'] } }));
+      if (url.includes('/rxcui/1151133/properties')) return new Response(JSON.stringify({ properties: { name: 'Pill', tty: 'DFG' } }));
+      if (url.includes('/rxcui/1364430/properties')) return new Response(JSON.stringify({ properties: { name: 'apixaban', tty: 'IN' } }));
+      return new Response('{}', { status: 404 });
+    };
+    const client = createEvidenceClient({ offline: false }, { fetch: fetchImpl });
+    expect(await client.rxcuiForName('pills')).toBeNull();
+    expect(await client.rxcuiForName('capsule')).toBeNull(); // known dose-form word: not even looked up
+    expect(await client.rxcuiForName('apixaban')).toBe('1364430');
   });
 });
 
@@ -198,6 +274,8 @@ describe('createEvidenceClient', () => {
     const articles = await client.searchPubMed('statin muscle', { max: 2 });
     expect(articles.map((a) => a.pmid)).toEqual(['36049498']);
     expect(urls).toHaveLength(3); // esearch (reviews) → esearch (relevance) → efetch
+    // Animal-only research is filtered out of both searches.
+    expect(urls.slice(0, 2).every((u) => decodeURIComponent(u.replace(/\+/g, ' ')).includes('NOT (animals[mh] NOT humans[mh])'))).toBe(true);
     expect(urls.every((u) => u.includes('tool=brian') && u.includes('email=dev%40brian.test') && u.includes('api_key=k'))).toBe(true);
     expect(urls[2]).toContain('id=36049498%2C111');
   });

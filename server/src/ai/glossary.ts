@@ -47,8 +47,10 @@ export const GLOSSARY: GlossaryEntry[] = [
   E('IV', 'through a vein (IV)', 'Given through a vein, usually through a small tube (an IV line).', 'sig', { forms: ['IV', 'I.V.'], cs: true }),
   E('inh', 'inhaled', 'Breathed in, for example from an inhaler.', 'sig', { forms: ['inh', 'INH'], cs: true }),
   E('gtt', 'drops', 'Drops (for example eye or ear drops).', 'sig', { forms: ['gtt', 'gtts'], cs: true }),
-  E('tab', 'tablet', 'Tablet (pill).', 'sig', { forms: ['tab', 'tabs'], cs: true }),
-  E('cap', 'capsule', 'Capsule.', 'sig', { forms: ['cap', 'caps'], cs: true }),
+  E('tab', 'tablet', 'Tablet (pill).', 'sig', { forms: ['tab'], cs: true }),
+  E('tabs', 'tablets', 'Tablets (pills).', 'sig', { forms: ['tabs'], cs: true }),
+  E('cap', 'capsule', 'Capsule.', 'sig', { forms: ['cap'], cs: true }),
+  E('caps', 'capsules', 'Capsules.', 'sig', { forms: ['caps'], cs: true }),
   E('mcg', 'micrograms', 'Micrograms — a very small unit of weight (1,000 mcg = 1 mg).', 'sig', { forms: ['mcg', 'µg'], cs: true }),
   E('IU', 'international units', 'International units — a standard way to measure some vitamins and medicines.', 'sig', { cs: true }),
   E('UD', 'as directed', 'Use as directed by your clinician.', 'sig', { forms: ['UD', 'u.d.', 'ud'], cs: true }),
@@ -67,7 +69,7 @@ export const GLOSSARY: GlossaryEntry[] = [
   E('r/o', 'rule out', 'Rule out — checking to make sure it is not a certain condition.', 'abbreviation', { forms: ['r/o', 'R/O'], cs: true }),
   E('c/o', 'complains of', 'Complains of — the symptoms you reported.', 'abbreviation', { forms: ['c/o', 'C/O'], cs: true }),
   E('h/o', 'history of', 'History of.', 'abbreviation', { forms: ['h/o', 'H/O'], cs: true }),
-  E('d/c', 'stop', 'Discontinue (stop) — or, in hospital notes, discharge.', 'abbreviation', { forms: ['d/c', 'D/C', 'dc\'d', 'd/c\'d'], cs: true }),
+  E('d/c', 'stop', 'Discontinue (stop) — or, in hospital notes, discharge.', 'abbreviation', { forms: ['d/c', 'D/C', 'D/c', 'dc\'d', 'd/c\'d', 'D/c\'d'], cs: true }),
   E('b/l', 'on both sides', 'Bilateral — on both sides of the body.', 'abbreviation', { forms: ['b/l', 'B/L'], cs: true }),
   E('y/o', 'year-old', 'Years old.', 'abbreviation', { forms: ['y/o', 'y.o.'], cs: true }),
   E('re:', 'about', 'Regarding — about.', 'abbreviation', { forms: ['re:', 'Re:'], cs: true }),
@@ -183,6 +185,7 @@ export const GLOSSARY: GlossaryEntry[] = [
   E('WBC', 'white blood cell count', 'White blood cell count — cells that fight infection.', 'lab', { cs: true }),
   E('PLT', 'platelets', 'Platelets — blood cells that help blood clot.', 'lab', { forms: ['PLT', 'Plt'], cs: true }),
   E('INR', 'INR (blood clotting test)', 'A blood test of how fast your blood clots, often used with warfarin.', 'lab', { cs: true }),
+  E('PT/INR', 'blood clotting test (PT/INR)', 'Prothrombin time and INR — a blood test of how fast your blood clots, often used with warfarin.', 'lab', { forms: ['PT/INR', 'PT-INR', 'PT INR'], cs: true }),
   E('LFTs', 'liver tests', 'Liver function tests — blood tests that check the liver.', 'lab', { forms: ['LFTs', 'LFT'], cs: true }),
   E('UA', 'urine test', 'Urinalysis — a test of your urine.', 'lab', { cs: true }),
   E('UACR', 'urine protein test (kidney check)', 'Urine albumin-to-creatinine ratio — checks for protein in the urine, an early sign of kidney damage.', 'lab', { forms: ['UACR', 'ACR', 'microalbumin'], cs: true }),
@@ -274,8 +277,37 @@ const COMPILED: CompiledForm[] = GLOSSARY.flatMap((entry) =>
   }),
 );
 
-/** Patterns whose plain text depends on the match (every N hours, "3 mo" → "3 months"). */
-const DYNAMIC: Array<{ regex: RegExp; entry: GlossaryEntry; plain: (m: RegExpExecArray) => string }> = [
+const RELEASE_PLAIN: Record<string, string> = {
+  ER: 'extended-release',
+  XR: 'extended-release',
+  XL: 'extended-release',
+  SR: 'extended-release',
+  CR: 'extended-release',
+  DR: 'delayed-release',
+  IR: 'immediate-release',
+  ODT: 'dissolving tablet',
+};
+
+/**
+ * Patterns whose plain text depends on the match (every N hours, "3 mo" → "3 months").
+ * `contextual` ones win over a plain entry for the same text: "Metformin ER 500 mg" is
+ * extended-release (not the emergency room), "SpO2 98% on RA" is room air (not arthritis).
+ */
+const DYNAMIC: Array<{ regex: RegExp; entry: GlossaryEntry; plain: (m: RegExpExecArray) => string; contextual?: boolean }> = [
+  {
+    // A formulation suffix after a medicine name and before a strength or dose form.
+    regex: /(?<=\b[A-Za-z][A-Za-z-]{2,}\s)(?<!\b(?:the|to|in|at|an|a|of|from|via|into|and|or|go|went|the)\s)(ER|XR|XL|SR|CR|DR|IR|ODT)(?=\s+\d+(?:\.\d+)?\s?(?:mg|mcg|g|units?)\b|\s+(?:tab|tabs|tablets?|caps?|capsules?)\b)/g,
+    entry: E('ER', 'extended-release', 'Extended-release (ER, XR, XL, SR) — the medicine is released slowly over the day. DR means delayed-release; IR means immediate-release.', 'sig'),
+    plain: (m) => RELEASE_PLAIN[m[1] ?? ''] ?? 'extended-release',
+    contextual: true,
+  },
+  {
+    // "SpO2 98% on RA", "O2 sat 95% RA": room air (no extra oxygen).
+    regex: /(?<=\b(?:SpO2|O2|sats?|saturation|pulse ox)\b[^.;]{0,15}?(?:\bon\s|%\s?))RA\b/g,
+    entry: E('RA (room air)', 'room air', 'Room air — breathing normal air, without extra oxygen.', 'abbreviation'),
+    plain: () => 'room air',
+    contextual: true,
+  },
   {
     regex: /(?<![A-Za-z0-9])q\.?\s?(\d{1,2})\s?[-–]\s?(\d{1,2})\s?h(?:rs?|ours?)?\.?(?![A-Za-z0-9])/gi,
     entry: E('q4-6h', 'every few hours', 'Every so many hours (for example, q4-6h = every 4 to 6 hours).', 'sig'),
@@ -324,13 +356,16 @@ export function findGlossaryTerms(text: string): GlossaryMatch[] {
       if (m[0].length === 0) regex.lastIndex++;
     }
   }
-  for (const { regex, entry, plain } of DYNAMIC) {
+  const contextual = new Set<GlossaryMatch>();
+  for (const { regex, entry, plain, contextual: wins } of DYNAMIC) {
     regex.lastIndex = 0;
     for (let m = regex.exec(text); m; m = regex.exec(text)) {
-      candidates.push({ entry, text: m[0], index: m.index, length: m[0].length, plain: plain(m) });
+      const match = { entry, text: m[0], index: m.index, length: m[0].length, plain: plain(m) };
+      candidates.push(match);
+      if (wins) contextual.add(match);
     }
   }
-  candidates.sort((a, b) => a.index - b.index || b.length - a.length);
+  candidates.sort((a, b) => a.index - b.index || b.length - a.length || Number(contextual.has(b)) - Number(contextual.has(a)));
   const out: GlossaryMatch[] = [];
   let end = -1;
   for (const candidate of candidates) {
@@ -378,7 +413,7 @@ export function toPlainLanguage(text: string): string {
     .replace(/\s*&\s*/g, ' and ')
     .replace(/(^|\s)~\s?(?=\d|once|twice)/g, '$1about ')
     .replace(/\b(return to the clinic|follow-up) (?=\d)/gi, '$1 in ')
-    .replace(/\bfollow-up (?!visit|call|in\b|for\b|with\b|on\b)(?=[a-z])/gi, 'follow-up for ')
+    .replace(/\bfollow-up (?!visit|call|in\b|for\b|with\b|on\b|as\b)(?=[a-z])/gi, 'follow-up for ')
     .replace(/\s{2,}/g, ' ')
     .replace(/\s+([.,;:])/g, '$1')
     .trim();
@@ -387,11 +422,33 @@ export function toPlainLanguage(text: string): string {
 
 const NOTE_KINDS: ReadonlySet<GlossaryKind> = new Set(['sig', 'abbreviation', 'condition', 'lab', 'test']);
 
-/** Heuristic: does this read like clinician shorthand (≥3 abbreviations, or dense ones)? */
+function noteAbbreviations(text: string): number {
+  return findGlossaryTerms(text).filter((m) => NOTE_KINDS.has(m.entry.kind) && m.entry.caseSensitive).length;
+}
+
+/** Someone writing in their own voice ("My BP is 220/130…", "Dad 72 y/o…"), or asking a question. */
+const OWN_VOICE = /\b(i|i'm|i've|my|me|we|our|mom|mum|dad|husband|wife|son|daughter|baby)\b|\?/i;
+
+/**
+ * Heuristic: does this read like clinician shorthand (≥3 abbreviations, or dense ones)? A
+ * person typing in their own words ("My BP is 185/125 and my HR is 110") needs more.
+ */
 export function looksLikeClinicalNote(text: string): boolean {
-  const hits = findGlossaryTerms(text).filter((m) => NOTE_KINDS.has(m.entry.kind) && m.entry.caseSensitive);
+  const hits = noteAbbreviations(text);
   const words = text.split(/\s+/).filter(Boolean).length;
-  return hits.length >= 3 || (hits.length >= 2 && words <= 20);
+  if (OWN_VOICE.test(text)) return hits >= 4;
+  return hits >= 3 || (hits >= 2 && words <= 20);
+}
+
+/**
+ * Stricter: a pasted clinician note (many abbreviations), whose findings are documentation
+ * rather than something happening to the reader. Used to soften triage, so a patient's
+ * typed message with a couple of abbreviations ("BP 190/100 … go to the ER?") never counts.
+ */
+export function looksLikePastedNote(text: string): boolean {
+  const hits = noteAbbreviations(text);
+  const words = text.split(/\s+/).filter(Boolean).length;
+  return hits >= 6 || (hits >= 4 && words >= 25);
 }
 
 /** Terms worth a "Key terms" definition list (labs, conditions, medicine classes, jargon). */
@@ -403,12 +460,32 @@ export function keyTerms(text: string, max = 8): GlossaryEntry[] {
     .slice(0, max);
 }
 
+/** "What does …", "what is a normal …", "define …" right before the term. */
+const ASKS_BEFORE =
+  /\b(what (is|are|does|do|was)|what's|whats|define|definition of|meaning of|explain|stand for)\s+(?:(?:a|an|the|my|this|that|normal|high|low|healthy|good|your)\s+){0,2}["'“(]?$/i;
+/** "… mean?", "… stand for?" right after the term. */
+const ASKS_AFTER = /^["'”)]?\s*(mean|means|meaning|stand for|stands for|short for)\b/i;
+
+/**
+ * Terms the message asks the meaning of ("What does BID mean?", "what is a normal A1c",
+ * "what does PRN stand for") — not every term that happens to appear ("the difference
+ * between urgent care and the ER" is not a question about the letters "ER").
+ */
+export function glossaryQuestionTerms(message: string): GlossaryEntry[] {
+  const aboutAbbreviations = /\babbreviations?\b/i.test(message);
+  const out: GlossaryEntry[] = [];
+  for (const match of findGlossaryTerms(message)) {
+    const before = message.slice(Math.max(0, match.index - 60), match.index);
+    const after = message.slice(match.index + match.length, match.index + match.length + 20);
+    const asked = ASKS_BEFORE.test(before) || ASKS_AFTER.test(after) || (aboutAbbreviations && match.entry.caseSensitive === true);
+    if (asked && !out.includes(match.entry)) out.push(match.entry);
+  }
+  return out;
+}
+
 /** "What does BID mean?", "what is an A1c", "what does PRN stand for". */
 export function isGlossaryQuestion(message: string): boolean {
-  return (
-    /\b(mean|means|meaning|stand for|stands for|abbreviation|what is|what's|what are|define)\b/i.test(message) &&
-    findGlossaryTerms(message).length > 0
-  );
+  return glossaryQuestionTerms(message).length > 0;
 }
 
 export function glossarySize(): number {

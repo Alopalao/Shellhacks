@@ -32,11 +32,16 @@ import { isGlossaryQuestion, looksLikeClinicalNote } from './glossary';
 import {
   detectAspect,
   ASPECT_TITLE_WORDS,
+  classTopicPubMedQuery,
   detectTopics,
   drugPubMedQuery,
   drugPubMedTerms,
+  drugTopicPubMedQuery,
   keywords,
+  questionClassGroups,
+  questionClassTerms,
   rankArticlesForQuestion,
+  refineTopicTerms,
   topicPubMedQuery,
   type HealthTopic,
 } from './topics';
@@ -73,8 +78,10 @@ interface Plan {
   pubmedQuery: string | null;
   /** Looser variant used when the precise query finds fewer than 2 articles. */
   pubmedFallbackQuery: string | null;
-  /** Words that make an article title relevant to this question (for ranking). */
+  /** Concepts the question is about: an article title must mention one to be kept. */
   researchTerms: string[];
+  /** Words that make a kept article a better fit (the aspect asked about). */
+  boostTerms: string[];
   /** Articles fetched (for ranking) vs. kept. */
   pubmedMax: number;
   keepArticles: number;
@@ -84,15 +91,31 @@ interface Plan {
 const activeMeds = (input: ChatInput): Prescription[] =>
   (input.patient?.medications ?? []).filter((rx) => rx.status !== 'discontinued');
 
+/** "After a Car Accident: What to Do, Step by Step" → "car accident" (a MedlinePlus search). */
 function topicFromLesson(title: string): string {
-  return title
-    .replace(/\b(understanding|basics|guide|101|what to know|how to|your|the|a|an|lesson)\b/gi, ' ')
+  const head = title.split(/[:—–]/)[0] ?? title;
+  return head
+    .replace(
+      /\b(understanding|basics|basic|guide|101|what|to|do|know|how|your|you|the|a|an|and|or|vs|lesson|after|before|decide|options|step|by|when|why|is|are|can|should|for|with|of|in|on|it|its)\b/gi,
+      ' ',
+    )
     .replace(/[^\w\s-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+    .toLowerCase()
     .split(' ')
     .slice(0, 4)
     .join(' ');
+}
+
+const EXTENDED_RELEASE = /\b(er|xr|xl|sr|cr|extended[- ]release|sustained[- ]release|8[- ]?(hr|hour))\b/i;
+
+/** Extended-release only when the prescription or question says so; otherwise the standard product's label. */
+export function wantsExtendedRelease(name: string, prescription: Prescription | null, message: string): boolean {
+  const own = `${prescription?.drugName ?? ''} ${prescription?.form ?? ''} ${prescription?.instructions ?? ''}`;
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const inQuestion = new RegExp(`\\b${escaped}\\b[^.?!]{0,20}${EXTENDED_RELEASE.source}`, 'i').test(message);
+  return EXTENDED_RELEASE.test(own) || inQuestion;
 }
 
 /** Candidate words for an RxNorm exact-name check (unknown drug names like "Eliquis"). */
@@ -154,13 +177,19 @@ export async function planRetrieval(input: ChatInput, triage: TriageResult, evid
   if (triage.topic) addQuery(triage.topic);
   let topics: HealthTopic[] = [];
   if (input.mode === 'explain-note' && (noteText || looksLikeClinicalNote(input.message))) {
-    topics = detectTopics(noteText || input.message).filter((t) => t.key !== 'drug interactions');
+    // A note's conditions, not its logistics ("seen via telehealth", "to ER if worse").
+    topics = detectTopics(noteText || input.message).filter((t) => t.key !== 'drug interactions' && !t.nonClinical);
     for (const t of topics.slice(0, 3)) addQuery(t.medlineplus);
   } else {
     topics = detectTopics(input.message).filter((t) => t.key !== 'drug interactions');
-    if (input.lessonTitle) addQuery(topicFromLesson(input.lessonTitle));
+    // Lesson follow-ups stay anchored on the lesson's subject.
+    if (input.lessonTitle) {
+      const lessonTopics = detectTopics(input.lessonTitle).filter((t) => t.key !== 'drug interactions');
+      if (topics.length === 0) topics = lessonTopics;
+      if (topics.length === 0) addQuery(topicFromLesson(input.lessonTitle));
+    }
     for (const t of topics.slice(0, asked.length > 0 ? 1 : 2)) addQuery(t.medlineplus);
-    if (queries.length === 0 && asked.length === 0 && !(isGlossaryQuestion(input.message))) {
+    if (queries.length === 0 && asked.length === 0 && !input.lessonTitle && !isGlossaryQuestion(input.message)) {
       const words = keywords(input.message, 3);
       if (words.length > 0) addQuery(words.join(' '));
     }
@@ -179,7 +208,10 @@ export async function planRetrieval(input: ChatInput, triage: TriageResult, evid
   let pubmedQuery: string | null = null;
   let pubmedFallbackQuery: string | null = null;
   let researchTerms: string[] = [];
-  if (!liveEmergency && !glossaryQuestion && triage.triage?.level !== 'urgent') {
+  const boost: string[] = [];
+  // Insurance, legal and "where do I go" questions: research papers don't help.
+  const nonClinical = asked.length === 0 && topics[0]?.nonClinical === true;
+  if (!liveEmergency && !glossaryQuestion && !nonClinical && triage.triage?.level !== 'urgent') {
     if (allergy) {
       const term = allergy.conflicts[0]!.allergy.toLowerCase().split(/\s+/)[0] ?? allergy.drug;
       pubmedQuery = `${term}[ti] AND allerg*[ti]`;
@@ -187,8 +219,12 @@ export async function planRetrieval(input: ChatInput, triage: TriageResult, evid
       researchTerms = [term, 'allerg', 'delabel', 'testing'];
     } else if (asked.length > 0 && (input.mode !== 'explain-note' || isClinician)) {
       const names = asked.map((a) => a.name).slice(0, 2);
-      pubmedQuery = drugPubMedQuery(names, aspect, 'ti');
-      pubmedFallbackQuery = drugPubMedQuery(names, aspect, 'tiab');
+      // One medicine plus a condition the question names ("atorvastatin … muscle aches"): search both.
+      const condition = topics.find((t) => !t.nonClinical && t.pubmed.length > 0);
+      const conditionTerms = condition ? refineTopicTerms(input.message, condition.pubmed) : [];
+      pubmedQuery = names.length === 1 && condition ? drugTopicPubMedQuery(names[0]!, conditionTerms) : drugPubMedQuery(names, aspect, 'ti');
+      if (names.length === 1) boost.push(...conditionTerms);
+      pubmedFallbackQuery = drugPubMedQuery(names, aspect, names.length === 1 && condition ? 'ti' : 'tiab');
       researchTerms = names.flatMap((n) => drugPubMedTerms(n));
     } else if (input.mode === 'explain-note') {
       if (isClinician && topics.length > 0) {
@@ -199,23 +235,35 @@ export async function planRetrieval(input: ChatInput, triage: TriageResult, evid
       }
     } else {
       const triageTopic = triage.topic ? [triage.topic] : [];
-      const lessonTopic = input.lessonTitle ? [topicFromLesson(input.lessonTitle)] : [];
-      const terms = topics.length > 0 ? topics[0]!.pubmed : triageTopic.length > 0 ? triageTopic : lessonTopic;
-      if (terms.length > 0) {
-        pubmedQuery = topicPubMedQuery(terms, aspect, 'ti');
-        pubmedFallbackQuery = aspect ? topicPubMedQuery(terms, aspect, 'tiab') : null;
-        researchTerms = terms;
+      const clinical = topics.filter((t) => !t.nonClinical && t.pubmed.length > 0);
+      // Drug classes the question names ("SGLT2 inhibitors in HFrEF") lead the search; the condition narrows it.
+      const classGroups = questionClassGroups(input.message);
+      const classTerms = questionClassTerms(input.message);
+      if (classTerms.length > 0) {
+        const topic = clinical.find((t) => !t.pubmed.some((term) => classTerms.includes(term)));
+        const condition = topic ? refineTopicTerms(input.message, topic.pubmed) : [];
+        pubmedQuery = classTopicPubMedQuery(classGroups, condition, aspect, 'ti');
+        pubmedFallbackQuery = classTopicPubMedQuery(classGroups, condition, null, 'tiab');
+        researchTerms = classTerms;
+        boost.push(...condition);
       } else {
-        const words = keywords(input.message, 3);
-        if (words.length > 0) {
-          pubmedQuery = words.map((w) => `${w}[tiab]`).join(' AND ');
-          researchTerms = words;
+        const terms = clinical.length > 0 ? clinical[0]!.pubmed : topics.length === 0 ? triageTopic : [];
+        if (terms.length > 0) {
+          pubmedQuery = topicPubMedQuery(terms, aspect, 'ti');
+          pubmedFallbackQuery = aspect ? topicPubMedQuery(terms, aspect, 'tiab') : null;
+          researchTerms = terms;
+        } else if (topics.length === 0 && !input.lessonTitle) {
+          const words = keywords(input.message, 3);
+          if (words.length > 0) {
+            pubmedQuery = words.map((w) => `${w}[tiab]`).join(' AND ');
+            researchTerms = words;
+          }
         }
       }
     }
   }
 
-  if (aspect) researchTerms = [...researchTerms, ...ASPECT_TITLE_WORDS[aspect]];
+  const boostTerms = [...boost, ...(aspect ? ASPECT_TITLE_WORDS[aspect] : [])];
 
   return {
     askedDrugs: asked.slice(0, 3),
@@ -225,7 +273,9 @@ export async function planRetrieval(input: ChatInput, triage: TriageResult, evid
     pubmedQuery,
     pubmedFallbackQuery,
     researchTerms,
-    pubmedMax: 5,
+    boostTerms,
+    // Fetch extra candidates: unrelated or off-population titles are dropped when ranking.
+    pubmedMax: isClinician ? 8 : 6,
     keepArticles: isClinician ? 5 : 3,
     labelsForAsked: asked.length > 0 && input.mode !== 'explain-note',
   };
@@ -246,6 +296,22 @@ const CONDITION_SECTIONS: LabelSectionKey[] = ['boxedWarning', 'contraindication
 
 /** Sentences about trials/pharmacology, not advice for a patient. */
 const NOT_ADVICE = /\b(trial|randomi[sz]ed|enrolled|placebo|study|studies|pharmacokinetic|AUC|Cmax|mg\/kg|subjects)\b/i;
+/** Words that say what an interaction does (a bare list of drug names says nothing). */
+const EFFECT_WORDS =
+  /\b(risk|increase[sd]?|decrease[sd]?|raise[sd]?|lower[sd]?|may|can|could|cause[sd]?|syndrome|bleed\w*|toxicity|levels?|effects?|avoid|monitor|reduce[sd]?|not recommended|contraindicated|do not|should not)\b/i;
+
+/**
+ * For a bare "Examples: … St. John's Wort." row of a PLR interaction table, the row's
+ * "Clinical Impact:" sentence (what actually happens) before it.
+ */
+function clinicalImpactBefore(text: string, candidate: string): string | null {
+  const at = text.indexOf(candidate.slice(0, 40));
+  if (at < 0) return null;
+  const start = text.lastIndexOf('Clinical Impact:', at);
+  if (start < 0 || at - start > 1500) return null;
+  const impact = splitSentences(text.slice(start + 'Clinical Impact:'.length, at))[0]?.trim();
+  return impact && EFFECT_WORDS.test(impact) ? impact.replace(/\s*Intervention:.*$/, '') : null;
+}
 
 /** Label passages (highlight items, then sentences) that mention one of `patterns`. */
 export function findLabelMention(
@@ -254,22 +320,48 @@ export function findLabelMention(
   sections: LabelSectionKey[] = INTERACTION_SECTIONS,
 ): string | null {
   if (!label) return null;
+  let listOnly: string | null = null;
   for (const key of sections) {
     const text = label.sections[key];
     if (!text) continue;
     const summary = summarizeSection(text, 5000, 30);
     const candidates = [...summary.items, ...splitSentences(text)];
     for (const raw of candidates) {
-      const candidate = raw.replace(/^\d+(\.\d+)?\s+/, '');
-      if (candidate.length > 600 || NOT_ADVICE.test(candidate)) continue;
-      if (patterns.some((p) => p.test(candidate))) {
-        const intro = summary.intro && summary.items.includes(candidate) ? `${summary.intro} ` : '';
-        return `${intro}${candidate}`.trim();
-      }
+      const candidate = raw.replace(/^\d+(\.\d+)?\s+/, '').replace(/^[•\s]+/, '');
+      if (candidate.length > 600 || NOT_ADVICE.test(candidate) || /^see (the )?(full prescribing information|section)/i.test(candidate)) continue;
+      if (!patterns.some((p) => p.test(candidate))) continue;
+      const intro = summary.intro && summary.items.includes(candidate) ? `${summary.intro} ` : '';
+      const passage = `${intro}${candidate}`.trim();
+      if (EFFECT_WORDS.test(passage)) return passage;
+      const impact = clinicalImpactBefore(text, candidate);
+      if (impact) return `${impact} ${candidate.replace(/^Examples?:\s*/i, 'Examples: ')}`;
+      // Keep looking for a passage that says what happens; fall back to the bare mention.
+      listOnly ??= passage;
     }
   }
-  return null;
+  return listOnly;
 }
+
+/** Foods, drinks and substances people ask about with a medicine, and how FDA labels name them. */
+const SUBSTANCES: Array<{ name: string; question: RegExp; label: RegExp[] }> = [
+  { name: 'grapefruit juice', question: /\bgrapefruit\b/i, label: [/\bgrapefruit\b/i] },
+  { name: 'alcohol', question: /\b(alcohol\w*|beers?|wine|liquor|booze|drinking alcohol|cocktails?)\b/i, label: [/\balcohol\w*/i, /\bethanol\b/i] },
+  { name: 'caffeine', question: /\b(caffeine|coffee|energy drinks?)\b/i, label: [/\bcaffeine\b/i] },
+  { name: 'potassium or salt substitutes', question: /\b(potassium|salt substitutes?|lo-?salt|nu-?salt)\b/i, label: [/\bpotassium[- ](supplements?|containing)\b/i, /\bsalt substitutes?\b/i] },
+  { name: 'dairy or calcium', question: /\b(milk|dairy|cheese|yogurt|antacids?)\b/i, label: [/\b(milk|dairy|antacids?)\b/i, /\bcalcium[- ](containing|supplements?)\b/i] },
+  { name: 'vitamin K', question: /\b(vitamin k|leafy greens?|spinach|kale)\b/i, label: [/\bvitamin k\b/i] },
+  { name: 'cannabis', question: /\b(cannabis|marijuana|weed|thc|cbd)\b/i, label: [/\b(cannabis|marijuana|cannabidiol|cannabinoids?)\b/i] },
+];
+const SUBSTANCE_SECTIONS: LabelSectionKey[] = [
+  'interactions',
+  'warningsAndCautions',
+  'warnings',
+  'patientInfo',
+  'whenUsing',
+  'askDoctorOrPharmacist',
+  'doNotUse',
+  'dosage',
+];
 
 const namePattern = (name: string): RegExp => new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
 
@@ -324,7 +416,16 @@ export async function retrieveEvidence(input: ChatInput, triage: TriageResult, e
     const supplement = isSupplement(generic) || isSupplement(name);
     const [label, medline] = await Promise.all([
       wantLabel && !supplement
-        ? track(`openFDA: ${name}`, evidence.drugLabel(generic, { rxcui: normalized?.rxcui, preferOtc: isOtc(generic) && !prescription, form: prescription?.form }), null)
+        ? track(
+            `openFDA: ${name}`,
+            evidence.drugLabel(generic, {
+              rxcui: normalized?.rxcui,
+              preferOtc: isOtc(generic) && !prescription,
+              form: prescription?.form,
+              extendedRelease: wantsExtendedRelease(name, prescription, role === 'asked' ? input.message : ''),
+            }),
+            null,
+          )
         : Promise.resolve(null),
       track(`MedlinePlus: ${name}`, evidence.medlinePlusDrug({ name: generic, rxcui: normalized?.rxcui, form: prescription?.form ?? prescription?.drugName ?? null }), null),
     ]);
@@ -410,7 +511,7 @@ export async function retrieveEvidence(input: ChatInput, triage: TriageResult, e
   }
   for (const drug of noteDrugs) medlineSource(drug);
   if (infoTriage) for (const s of triageSources(infoTriage).slice(0, 1)) triageSourceIds.push(sources.add(s));
-  const rankedArticles = rankArticlesForQuestion(articles, plan.researchTerms, input.message).slice(0, plan.keepArticles);
+  const rankedArticles = rankArticlesForQuestion(articles, plan.researchTerms, input.message, plan.boostTerms).slice(0, plan.keepArticles);
   const articleEntries = rankedArticles.map((article) => ({ article, sourceId: sources.add(pubmedCitation(article)) }));
 
   // Label-based findings.
@@ -420,6 +521,16 @@ export async function retrieveEvidence(input: ChatInput, triage: TriageResult, e
     for (let j = 0; j < asked.length; j++) if (i !== j) pairs.push([asked[i]!, asked[j]!]);
     for (const med of patientMeds) {
       pairs.push([asked[i]!, med], [med, asked[i]!]);
+    }
+  }
+  // Foods and drinks named in the question ("Is grapefruit juice ok with atorvastatin?").
+  for (const substance of SUBSTANCES.filter((x) => x.question.test(input.message))) {
+    for (const drug of asked) {
+      const text = findLabelMention(drug.label, substance.label, SUBSTANCE_SECTIONS);
+      const sourceId = text ? labelSource(drug) : null;
+      if (text && sourceId) {
+        interactions.push({ labelDrug: drug.name, otherDrug: substance.name, via: substance.name, viaClass: false, text, sourceId, substance: true });
+      }
     }
   }
   for (const [a, b] of pairs) {
@@ -440,10 +551,14 @@ export async function retrieveEvidence(input: ChatInput, triage: TriageResult, e
     // Condition cautions matter for medicines the patient isn't already prescribed.
     if (drug.label && !drug.prescription) {
       for (const condition of conditions) {
-        const text = findLabelMention(drug.label, [condition.label], CONDITION_SECTIONS);
-        const sourceId = text ? labelSource(drug) : null;
-        if (text && sourceId && !conditionWarnings.some((w) => w.drug === drug.name && w.plainCondition === condition.plain)) {
-          conditionWarnings.push({ drug: drug.name, condition: condition.condition, plainCondition: condition.plain, text, sourceId });
+        if (conditionWarnings.some((w) => w.drug === drug.name && w.plainCondition === condition.plain)) continue;
+        for (const section of CONDITION_SECTIONS) {
+          const text = findLabelMention(drug.label, [condition.label], [section]);
+          const sourceId = text ? labelSource(drug) : null;
+          if (!text || !sourceId) continue;
+          const askFirst = ['askDoctor', 'doNotUse', 'contraindications'].includes(section);
+          conditionWarnings.push({ drug: drug.name, condition: condition.condition, plainCondition: condition.plain, text, sourceId, askFirst });
+          break;
         }
       }
     }

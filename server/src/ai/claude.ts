@@ -17,12 +17,35 @@ export const MAX_TOOL_ROUNDS = 3;
 export const MAX_TOKENS = 16_000;
 export const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
 const REQUEST_TIMEOUT_MS = 120_000;
+/**
+ * Budget for one whole answer (evidence pre-retrieval + every model round), kept under the
+ * app's 120 s request timeout so a reply never arrives after the app has given up.
+ */
+export const ANSWER_DEADLINE_MS = 100_000;
+/** With less time than this left, stop offering tools so the model answers with what it has. */
+const FINAL_ROUND_MS = 35_000;
+/** With less time than this left, don't start another model call. */
+const MIN_CALL_MS = 8_000;
+
+/** The overall answer deadline passed before the model finished. */
+export class ClaudeDeadlineError extends Error {
+  constructor() {
+    super('The AI answer took too long.');
+    this.name = 'ClaudeDeadlineError';
+  }
+}
+
+export interface ClaudeRequestOptions {
+  timeout?: number;
+  maxRetries?: number;
+  signal?: AbortSignal;
+}
 
 /** The slice of the SDK client we use (lets tests inject a fake). */
 export interface ClaudeClientLike {
   beta: {
     messages: {
-      create(params: MessageCreateParamsNonStreaming, options?: { timeout?: number; maxRetries?: number }): PromiseLike<BetaMessage>;
+      create(params: MessageCreateParamsNonStreaming, options?: ClaudeRequestOptions): PromiseLike<BetaMessage>;
     };
   };
 }
@@ -87,6 +110,10 @@ export interface ClaudeRunOptions {
   messages: BetaMessageParam[];
   tools: ToolRuntime | null;
   maxToolRounds?: number;
+  /** Epoch ms by which the answer must be done (see ANSWER_DEADLINE_MS). */
+  deadline?: number;
+  /** Aborts in-flight calls (the app disconnected). */
+  signal?: AbortSignal;
 }
 
 export function extractText(content: BetaContentBlock[]): string {
@@ -98,37 +125,56 @@ export function extractText(content: BetaContentBlock[]): string {
 }
 
 /**
+ * A 400 that rejects the fallback beta itself ("unknown beta", "fallbacks: not supported"),
+ * as opposed to any other bad request (prompt too long, invalid block…).
+ */
+export function rejectsFallbackBeta(error: unknown): boolean {
+  if (!(error instanceof Anthropic.BadRequestError)) return false;
+  const body = error.error as { error?: { message?: unknown } } | undefined;
+  const detail = typeof body?.error?.message === 'string' ? body.error.message : error.message;
+  return /fallback|anthropic-beta|\bbetas?\b/i.test(detail);
+}
+
+/**
  * One Claude "responder". Remembers whether the server-side fallback beta is accepted so a
  * 400 on the beta costs a single retry for the life of the process, not one per request.
+ * Other 400s are rethrown and leave the fallback on.
  */
 export class ClaudeResponder {
   private fallbackSupported = true;
 
   constructor(private readonly client: ClaudeClientLike) {}
 
-  private async create(params: MessageCreateParamsNonStreaming): Promise<BetaMessage> {
+  private async create(params: MessageCreateParamsNonStreaming, deadline: number, signal: AbortSignal | undefined): Promise<BetaMessage> {
+    const callOptions = (): ClaudeRequestOptions => {
+      const left = deadline - Date.now();
+      if (left < MIN_CALL_MS) throw new ClaudeDeadlineError();
+      // One SDK retry only when there's room for it inside the deadline.
+      return { timeout: Math.min(REQUEST_TIMEOUT_MS, left), maxRetries: left > 2 * FINAL_ROUND_MS ? 1 : 0, ...(signal ? { signal } : {}) };
+    };
     const withFallback: MessageCreateParamsNonStreaming = this.fallbackSupported
       ? { ...params, betas: [FALLBACK_BETA], fallbacks: 'default' }
       : params;
     try {
-      return await this.client.beta.messages.create(withFallback, { timeout: REQUEST_TIMEOUT_MS });
+      return await this.client.beta.messages.create(withFallback, callOptions());
     } catch (error) {
-      if (this.fallbackSupported && error instanceof Anthropic.BadRequestError) {
-        // The beta / fallbacks field may not be enabled for this key or model: retry once without it.
-        this.fallbackSupported = false;
-        return await this.client.beta.messages.create(params, { timeout: REQUEST_TIMEOUT_MS });
-      }
-      throw error;
+      if (!this.fallbackSupported || !rejectsFallbackBeta(error)) throw error;
+      // The beta isn't enabled for this key or model: retry without it, and stop sending it once that works.
+      const response = await this.client.beta.messages.create(params, callOptions());
+      this.fallbackSupported = false;
+      return response;
     }
   }
 
   async run(options: ClaudeRunOptions): Promise<ClaudeRunResult> {
     const maxRounds = options.maxToolRounds ?? MAX_TOOL_ROUNDS;
+    const deadline = options.deadline ?? Date.now() + ANSWER_DEADLINE_MS;
     const messages: BetaMessageParam[] = [...options.messages];
     let rounds = 0;
 
     for (;;) {
-      const allowTools = options.tools !== null && rounds < maxRounds;
+      // Near the deadline, stop tool rounds so the next call writes the answer.
+      const allowTools = options.tools !== null && rounds < maxRounds && deadline - Date.now() > FINAL_ROUND_MS;
       const response = await this.create({
         model: options.model,
         max_tokens: MAX_TOKENS,
@@ -137,7 +183,7 @@ export class ClaudeResponder {
         system: options.system,
         messages,
         ...(options.tools ? { tools: EVIDENCE_TOOLS, tool_choice: allowTools ? { type: 'auto' as const } : { type: 'none' as const } } : {}),
-      });
+      }, deadline, options.signal);
 
       if (response.stop_reason === 'refusal') {
         return {
@@ -183,6 +229,7 @@ export class ClaudeResponder {
 
 /** A short, user-safe explanation of why the AI model was unavailable. */
 export function describeClaudeError(error: unknown): string {
+  if (error instanceof ClaudeDeadlineError) return 'the AI service took too long';
   if (error instanceof Anthropic.AuthenticationError) return 'the AI service rejected the API key';
   if (error instanceof Anthropic.PermissionDeniedError) return "the API key doesn't have access to this model";
   if (error instanceof Anthropic.RateLimitError) return 'the AI service is busy (rate limited)';

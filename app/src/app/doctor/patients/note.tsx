@@ -16,7 +16,15 @@ import {
   useConfirm,
   useToast,
 } from '@/components/ui';
-import { doctorHrefs, goBackOr, NOTE_TEMPLATES, paramValue, type NoteTemplate } from '@/features/doctor';
+import {
+  doctorHrefs,
+  goBackOr,
+  isPatientUnavailable,
+  NOTE_TEMPLATES,
+  paramValue,
+  PatientUnavailable,
+  type NoteTemplate,
+} from '@/features/doctor';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { api, errorMessage, isApiRequestError } from '@/lib/api';
 import type { User } from '@/lib/contracts';
@@ -49,6 +57,13 @@ function NoteLoader({ patientId }: { patientId: string }) {
     return (
       <Screen header={<ScreenHeader title="New visit note" back={back} />} scroll={false}>
         <LoadingState label="Loading patient…" />
+      </Screen>
+    );
+  }
+  if (!q.data && isPatientUnavailable(q.error)) {
+    return (
+      <Screen header={<ScreenHeader title="New visit note" back={doctorHrefs.patients} />}>
+        <PatientUnavailable error={q.error} />
       </Screen>
     );
   }

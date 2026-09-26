@@ -8,11 +8,20 @@ import { colors, radius, spacing } from '@/theme';
 
 const SOURCE_LABEL: Record<ServerUrlSource, string> = {
   saved: 'Saved on this device',
-  env: 'From EXPO_PUBLIC_API_URL',
+  env: 'Set by the app’s configuration',
   'web-host': 'Auto-detected from this page',
   'expo-host': 'Auto-detected from the Expo dev server',
+  tunnel: 'Opened through an Expo tunnel, which can’t reach the server',
   default: 'Default',
 };
+
+/** Help under the address field. */
+function sourceHint(source: ServerUrlSource): string {
+  if (source === 'tunnel') {
+    return `${SOURCE_LABEL.tunnel}. Share the server with a tunnel of its own (e.g. ngrok or localtunnel) and enter its https:// address.`;
+  }
+  return `${SOURCE_LABEL[source]}. The computer running the BRIAN server prints its address when it starts.`;
+}
 
 type TestResult = { ok: true; health: HealthResponse; saved: boolean } | { ok: false; message: string };
 
@@ -34,14 +43,16 @@ export function describeAiMode(health: HealthResponse): string {
 /** Server URL editor with "Test connection" (GET /api/health). Saves the URL when the test succeeds. */
 export function ServerSettingsForm({ onConnected, autoFocus, style }: ServerSettingsFormProps) {
   const { url, override, detected, source, setServerUrl } = useServerUrl();
-  const [draft, setDraft] = useState(url);
+  // Tunnel mode has no usable detected address: start empty so the user types the public one.
+  const shownUrl = source === 'tunnel' ? '' : url;
+  const [draft, setDraft] = useState(shownUrl);
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
 
   // Keep the field in sync when the effective URL changes elsewhere.
   useEffect(() => {
-    setDraft(url);
-  }, [url]);
+    setDraft(shownUrl);
+  }, [shownUrl]);
 
   const invalid = draft.trim() !== '' && !normalizeServerUrl(draft);
 
@@ -83,7 +94,7 @@ export function ServerSettingsForm({ onConnected, autoFocus, style }: ServerSett
           setDraft(t);
           setResult(null);
         }}
-        placeholder="http://192.168.1.23:4000"
+        placeholder={source === 'tunnel' ? 'https://your-server.example.com' : 'http://192.168.1.23:4000'}
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
@@ -93,7 +104,7 @@ export function ServerSettingsForm({ onConnected, autoFocus, style }: ServerSett
         onSubmitEditing={test}
         leftIcon="server-outline"
         error={invalid ? 'That doesn’t look like a web address.' : null}
-        hint={`${SOURCE_LABEL[source]}. The computer running BRIAN prints its address on start (port 4000).`}
+        hint={sourceHint(source)}
       />
       <View style={styles.actions}>
         <Button title="Test connection" icon="pulse" onPress={test} loading={testing} disabled={invalid} />

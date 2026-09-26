@@ -54,6 +54,7 @@ export function DrugInfoPanel({ drugName }: DrugInfoPanelProps) {
   };
 
   const aka = info.brandNames.filter((b) => b.toLowerCase() !== info.name.toLowerCase());
+  const hasLabel = info.sections.length > 0;
   return (
     <View style={styles.container}>
       <View style={styles.headRow}>
@@ -72,12 +73,12 @@ export function DrugInfoPanel({ drugName }: DrugInfoPanelProps) {
         </View>
         {info.mocked ? (
           <Badge label="Demo data" tone="warning" icon="flask-outline" accessibilityLabel="Demo data: sample information, not the live FDA label" />
-        ) : (
+        ) : hasLabel ? (
           <Badge label="FDA label" tone="outline" icon="shield-checkmark-outline" />
-        )}
+        ) : null}
       </View>
 
-      {info.sections.length === 0 ? (
+      {!hasLabel ? (
         <EmptyState
           compact
           icon="document-text-outline"
@@ -110,7 +111,11 @@ export function DrugInfoPanel({ drugName }: DrugInfoPanelProps) {
 
       <Disclaimer
         compact
-        text="Summarized from official drug labeling. It doesn't replace advice from your doctor or pharmacist — don't change how you take a medicine without asking them."
+        text={
+          hasLabel
+            ? "Summarized from official drug labeling. It doesn't replace advice from your doctor or pharmacist — don't change how you take a medicine without asking them."
+            : "This doesn't replace advice from your doctor or pharmacist — don't change how you take a medicine without asking them."
+        }
       />
     </View>
   );

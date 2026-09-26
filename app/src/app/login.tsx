@@ -34,7 +34,7 @@ const SUCCESS_DELAY_MS = 900;
 export default function LoginScreen() {
   const params = useLocalSearchParams<{ role?: string }>();
   const { status, user, login } = useAuth();
-  const { url } = useServerUrl();
+  const { url, source } = useServerUrl();
   const toast = useToast();
 
   const [role, setRole] = useState<Role>(params.role === 'doctor' ? 'doctor' : 'patient');
@@ -65,6 +65,8 @@ export default function LoginScreen() {
 
   const emailError = attempted && !email.trim() ? 'Enter any email address.' : null;
   const passwordError = attempted && !password ? 'Enter any password (e.g. "demo").' : null;
+  // Opened via `expo start --tunnel`: the server's address must be entered before anything works.
+  const tunnel = source === 'tunnel';
   const offline = isNetworkError(error);
 
   const submit = async (req: LoginRequest, which: Exclude<Pending, null>) => {
@@ -109,6 +111,29 @@ export default function LoginScreen() {
             Demo mode: any email and password work. A new email creates an account.
           </AppText>
         </View>
+
+        {tunnel ? (
+          <Card variant="outline" style={styles.serverCard}>
+            <View style={styles.serverHeader}>
+              <View style={[styles.serverIcon, styles.tunnelIcon]}>
+                <Ionicons name="git-network-outline" size={20} color={colors.text} />
+              </View>
+              <View style={styles.flex}>
+                <AppText variant="bodyStrong">Tunnel mode: connect to your BRIAN server</AppText>
+                <AppText variant="small" tone="muted">
+                  This app was opened through an Expo tunnel, which carries the app but not the BRIAN server. Share
+                  the server with a tunnel of its own (e.g. ngrok or localtunnel) and enter its https:// address.
+                </AppText>
+              </View>
+            </View>
+            <ServerSettingsForm
+              onConnected={() => {
+                setError(null);
+                connectedToastId.current = toast.success('Connected', 'Now sign in.');
+              }}
+            />
+          </Card>
+        ) : null}
 
         <View style={styles.form}>
           <SegmentedControl<Role>
@@ -189,7 +214,7 @@ export default function LoginScreen() {
             </View>
           ) : null}
 
-          {offline ? (
+          {offline && !tunnel ? (
             <Card variant="outline" style={styles.serverCard}>
               <View style={styles.serverHeader}>
                 <View style={styles.serverIcon}>
@@ -266,27 +291,30 @@ export default function LoginScreen() {
           })}
         </View>
 
-        <View style={styles.footer}>
-          <Pressable
-            onPress={() => setShowServer((v) => !v)}
-            accessibilityRole="button"
-            accessibilityLabel={`Server ${url}. ${showServer ? 'Hide' : 'Change'} server settings`}
-            hitSlop={8}
-            style={styles.footerLink}
-          >
-            <AppText variant="caption" tone="muted" numberOfLines={1}>
-              Server: {url} ·{' '}
-              <AppText variant="caption" weight="semibold" style={styles.underline}>
-                {showServer ? 'Hide' : 'Change'}
+        {/* In tunnel mode the server form is already open at the top. */}
+        {tunnel ? null : (
+          <View style={styles.footer}>
+            <Pressable
+              onPress={() => setShowServer((v) => !v)}
+              accessibilityRole="button"
+              accessibilityLabel={`Server ${url}. ${showServer ? 'Hide' : 'Change'} server settings`}
+              hitSlop={8}
+              style={styles.footerLink}
+            >
+              <AppText variant="caption" tone="muted" numberOfLines={1}>
+                Server: {url} ·{' '}
+                <AppText variant="caption" weight="semibold" style={styles.underline}>
+                  {showServer ? 'Hide' : 'Change'}
+                </AppText>
               </AppText>
-            </AppText>
-          </Pressable>
-          {showServer && !offline ? (
-            <Card variant="outline">
-              <ServerSettingsForm autoFocus />
-            </Card>
-          ) : null}
-        </View>
+            </Pressable>
+            {showServer && !offline ? (
+              <Card variant="outline">
+                <ServerSettingsForm autoFocus />
+              </Card>
+            ) : null}
+          </View>
+        )}
       </Screen>
       {success ? <LgtmConfirmation name={success.user.name} isNewUser={success.isNewUser} /> : null}
     </View>
@@ -310,6 +338,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.dangerLight,
   },
+  tunnelIcon: { backgroundColor: colors.yellowLight },
   orRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   orLine: { flex: 1, height: 1, backgroundColor: colors.border },
   demoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },

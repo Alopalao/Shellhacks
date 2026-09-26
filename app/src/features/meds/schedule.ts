@@ -195,6 +195,8 @@ export interface AdherenceGrid {
   due: number;
   /** 0..1, or null when nothing was due. */
   rate: number | null;
+  /** False for paused/discontinued meds: their doses aren't counted (rate is null). */
+  tracked: boolean;
 }
 
 /** Dose history for one prescription over the last `count` days (oldest first). */
@@ -217,6 +219,9 @@ export function buildAdherenceGrid(
       if (!isScheduledOn(rx, day)) {
         return wasTaken ? 'taken' : 'off';
       }
+      // Paused/discontinued meds aren't scheduled (matches the server's adherence rules). The contract
+      // has no pausedAt, so the whole history reads as "off" rather than a row of red misses.
+      if (rx.status !== 'active') return wasTaken ? 'taken' : 'off';
       if (wasTaken) {
         takenCount += 1;
         due += 1;
@@ -227,7 +232,7 @@ export function buildAdherenceGrid(
       return 'missed';
     }),
   }));
-  return { days, rows, taken: takenCount, due, rate: due > 0 ? takenCount / due : null };
+  return { days, rows, taken: takenCount, due, rate: due > 0 ? takenCount / due : null, tracked: rx.status === 'active' };
 }
 
 /** `from`/`to` date keys covering the last `count` days, for `api.doses`. */

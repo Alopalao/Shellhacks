@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { createSession } from '../src/auth/sessions';
+import type { Db, DbData, Session as StoredSession } from '../src/context';
 import { DEMO_ACCOUNTS, DEMO_IDS } from '../src/db/seed';
 import type { HealthResponse, LoginResponse, User } from '../src/shared/contracts';
-import { login, startTestServer, uniqueEmail, type TestServer } from './helpers';
+import { connectSocket, login, startTestServer, uniqueEmail, type TestServer } from './helpers';
 
 let server: TestServer;
 
@@ -108,6 +110,63 @@ describe('sessions', () => {
     await server.http.post('/api/auth/logout').set(a.auth).expect(200, { ok: true });
     await server.http.get('/api/me').set(a.auth).expect(401);
     await server.http.get('/api/me').set(b.auth).expect(200);
+  });
+
+  it('caps sessions per user, evicting idle and then least recently used ones first', () => {
+    const at = (minute: number): string => new Date(Date.UTC(2026, 0, 1, 0, minute)).toISOString();
+    const sessions: StoredSession[] = Array.from({ length: 20 }, (_, i) => ({
+      token: `t${i}`,
+      userId: 'usr_a',
+      createdAt: at(i),
+    }));
+    sessions[1]!.lastUsedAt = at(59);
+    sessions.push({ token: 'other', userId: 'usr_b', createdAt: at(0) });
+    const db: Db = { data: { sessions } as DbData, save: () => undefined, reset: () => undefined };
+    const isLive = (token: string): boolean => token === 't0';
+
+    // t0 has an open app and t1 was just used, so t2 then t3 go first.
+    const first = createSession(db, 'usr_a', { now: new Date(at(60)), isLive });
+    expect(first.evicted).toEqual(['t2']);
+    const second = createSession(db, 'usr_a', { now: new Date(at(61)), isLive });
+    expect(second.evicted).toEqual(['t3']);
+    const tokens = db.data.sessions.map((s) => s.token);
+    expect(tokens.filter((t) => t !== 'other')).toHaveLength(20);
+    expect(tokens).toEqual(expect.arrayContaining(['t0', 't1', 'other', first.session.token, second.session.token]));
+  });
+
+  it('keeps a device with an open app signed in when the session cap is hit', async () => {
+    const email = uniqueEmail('presenter');
+    const presenter = await login(server, email);
+    const client = await connectSocket(server, presenter.token);
+    try {
+      const idle = await login(server, email);
+      for (let i = 0; i < 19; i += 1) await login(server, email);
+      await server.http.get('/api/me').set(idle.auth).expect(401);
+      await server.http.get('/api/me').set(presenter.auth).expect(200);
+      expect(client.socket.connected).toBe(true);
+    } finally {
+      client.close();
+    }
+  });
+
+  it("disconnects an evicted session's socket so it stops receiving live events", async () => {
+    const email = uniqueEmail('crowded');
+    const sessions = [];
+    for (let i = 0; i < 20; i += 1) sessions.push(await login(server, email));
+    const clients = await Promise.all(sessions.map((s) => connectSocket(server, s.token)));
+    try {
+      const oldest = clients[0]!;
+      const dropped = new Promise<string>((resolve) => oldest.socket.once('disconnect', resolve));
+      const newest = await login(server, email);
+      await expect(dropped).resolves.toBe('io server disconnect');
+      await server.http.get('/api/me').set(sessions[0]!.auth).expect(401);
+
+      await server.http.patch('/api/me').set(newest.auth).send({ name: 'Still Here' }).expect(200);
+      await clients[1]!.next('user:updated', (u) => u.name === 'Still Here');
+      expect(oldest.received('user:updated')).toEqual([]);
+    } finally {
+      for (const client of clients) client.close();
+    }
   });
 });
 

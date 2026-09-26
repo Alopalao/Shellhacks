@@ -12,6 +12,7 @@ import {
   mergeMessages,
   normalizeMessages,
   oldestSent,
+  resyncMessages,
   upsertMessage,
 } from './messages';
 import type { LocalMessage } from './types';
@@ -31,7 +32,8 @@ type Action =
   | { type: 'reset' }
   | { type: 'loaded'; messages: ChatMessage[]; me: string }
   | { type: 'loadFailed'; error: unknown }
-  | { type: 'resynced'; messages: ChatMessage[]; me: string }
+  /** `known`: ids of delivered messages we had when the request started. */
+  | { type: 'resynced'; messages: ChatMessage[]; me: string; known: ReadonlySet<string> }
   | { type: 'earlierStart' }
   | { type: 'earlierLoaded'; messages: ChatMessage[]; me: string }
   | { type: 'earlierFailed'; error: unknown }
@@ -67,14 +69,25 @@ function reducer(state: ChatThreadState, action: Action): ChatThreadState {
       };
     case 'loadFailed':
       return state.status === 'ready' ? state : { ...state, status: 'error', error: action.error };
-    case 'resynced':
+    case 'resynced': {
+      // The latest page is the truth for its window: after a demo reset, stale copies are dropped
+      // instead of showing every seeded message twice.
+      const { messages, replaced } = resyncMessages(state.messages, action.messages, {
+        me: action.me,
+        reconcile: true,
+        pageSize: CHAT_PAGE_SIZE,
+        known: action.known,
+      });
+      const pageHasMore = action.messages.length >= CHAT_PAGE_SIZE;
       return {
         ...state,
-        messages: mergeMessages(state.messages, action.messages, { me: action.me, reconcile: true }),
+        messages,
         status: 'ready',
         error: null,
-        hasMore: state.status === 'ready' ? state.hasMore : action.messages.length >= CHAT_PAGE_SIZE,
+        hasMore: state.status === 'ready' && !replaced ? state.hasMore : pageHasMore,
+        earlierError: replaced ? null : state.earlierError,
       };
+    }
     case 'earlierStart':
       return { ...state, loadingEarlier: true, earlierError: null };
     case 'earlierLoaded':
@@ -182,10 +195,13 @@ export function useChatThread({ threadId, me, patientId, doctorId, active }: Use
     async (mode: 'initial' | 'resync') => {
       const seq = ++loadSeq.current;
       lastSyncAt.current = Date.now();
+      // Delivered messages we have now; anything that arrives live during the request isn't "missing".
+      const known = new Set(stateRef.current.messages.filter((m) => m.status === 'sent').map((m) => m.id));
       try {
         const messages = await api.messages(threadId, { limit: CHAT_PAGE_SIZE });
         if (!alive.current || seq !== loadSeq.current) return;
-        dispatch({ type: mode === 'initial' ? 'loaded' : 'resynced', messages, me });
+        if (mode === 'initial') dispatch({ type: 'loaded', messages, me });
+        else dispatch({ type: 'resynced', messages, me, known });
       } catch (error) {
         if (!alive.current || seq !== loadSeq.current) return;
         if (mode === 'initial') dispatch({ type: 'loadFailed', error });
@@ -201,12 +217,14 @@ export function useChatThread({ threadId, me, patientId, doctorId, active }: Use
     void load('initial');
   }, [load]);
 
-  // Resync after a socket reconnect — events may have been missed while offline.
+  // Resync after a socket reconnect — events may have been missed while offline. On the very first
+  // connect, reload only if the thread hasn't loaded yet (it was opened while the server was down).
   const seenConnectCount = useRef(connectCount);
   useEffect(() => {
     const changed = connectCount !== seenConnectCount.current;
     seenConnectCount.current = connectCount;
-    if (!changed || connectCount <= 1) return;
+    if (!changed || connectCount < 1) return;
+    if (connectCount === 1 && stateRef.current.status === 'ready') return;
     void load(stateRef.current.status === 'ready' ? 'resync' : 'initial');
   }, [connectCount, load]);
 
